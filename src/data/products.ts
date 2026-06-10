@@ -8,7 +8,7 @@ export const products: Product[] = [
     description: 'Riz parfumé de haute qualité, idéal pour tous vos plats.',
     price: 4500,
     unit: 'sac 5kg',
-    category: 1,
+    category: 'alimentaire',
     image_url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=300&h=300&fit=crop',
     bgColor: 'linear-gradient(135deg, #fef3c7, #fefce8)',
     inStock: true,

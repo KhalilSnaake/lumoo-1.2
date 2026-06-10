@@ -3,7 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSearch } from '../context/SearchContext';
-import { useContactMessages } from '../context/ContactMessagesContext';
+
 
 import Logo from './Logo';
 import NotificationMenu from './NotificationMenu';
@@ -13,7 +13,6 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
   const { user, isLoggedIn, logout, setShowAuth } = useAuth();
   const { unreadCount } = useNotifications();
   const { search, setSearch } = useSearch();
-  const { unreadMessagesCount } = useContactMessages();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);

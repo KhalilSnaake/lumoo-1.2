@@ -1469,7 +1469,7 @@ function MessagesTab() {
     markAsRead,
     sendReply,
     deleteMessage,
-    createTestMessage
+
   } = useContactMessages();
 
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);

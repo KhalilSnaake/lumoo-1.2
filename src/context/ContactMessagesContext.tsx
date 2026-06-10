@@ -39,7 +39,11 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('✅ Messages loaded:', data?.length || 0);
-      setMessages(data || []);
+      const normalized = (data || []).map((m: any) => ({
+        ...m,
+        is_read: m.is_read ?? false,
+      }));
+      setMessages(normalized);
     } catch (err: any) {
       console.error('❌ Unexpected error:', err);
       showToast('Erreur inattendue', 'error');
@@ -172,19 +176,21 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const unreadCount = messages.filter(msg => !msg.is_read).length;
+  const unreadCount = messages.filter((msg) => !msg.is_read).length;
 
   return (
-    <ContactMessagesContext.Provider value={{
-      messages,
-      unreadCount,
-      loading,
-      refreshMessages,
-      markAsRead,
-      sendReply,
-      deleteMessage,
-      createTestMessage
-    }}>
+    <ContactMessagesContext.Provider
+      value={{
+        messages,
+        unreadCount,
+        loading,
+        refreshMessages,
+        markAsRead,
+        sendReply,
+        deleteMessage,
+        createTestMessage,
+      }}
+    >
       {children}
     </ContactMessagesContext.Provider>
   );

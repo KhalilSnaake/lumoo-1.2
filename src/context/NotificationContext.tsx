@@ -8,7 +8,13 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 // Synthesized notification sound using Web Audio API
 const playNotificationSound = () => {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Guard against non-browser environments
+    if (typeof window === 'undefined') return;
+
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+
+    const audioContext = new AudioCtx();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -24,8 +30,8 @@ const playNotificationSound = () => {
 
     oscillator.start();
     oscillator.stop(audioContext.currentTime + 0.3);
-  } catch (e) {
-    console.error('Error playing sound:', e);
+  } catch {
+    // Avoid noisy logs in production
   }
 };
 
@@ -63,7 +69,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         }, (payload) => {
-          console.log('New notification received:', payload);
+
           const newNotif = {
             id: payload.new.id,
             userId: payload.new.user_id,
@@ -78,8 +84,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           playNotificationSound();
           setNotifications(prev => [newNotif, ...prev]);
         })
-        .subscribe((status) => {
-          console.log('Supabase subscription status:', status);
+        .subscribe(() => {
+          // noop
         });
       
       return () => { 

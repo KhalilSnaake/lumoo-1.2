@@ -1,5 +1,5 @@
 import { useNotifications } from '../context/NotificationContext';
-import { NotificationType } from '../types/notifications';
+import { Notification, NotificationType } from '../types/notifications';
 
 interface NotificationMenuProps {
   onClose: () => void;
@@ -13,7 +13,8 @@ export default function NotificationMenu({ onClose, onNavigate }: NotificationMe
     new_order: '📦',
     assignment: '🛵',
     status_change: '🔄',
-    general: '🔔'
+    general: '🔔',
+    new_message: '💬',
   };
 
   const fmtDate = (d: string) => {
@@ -25,8 +26,8 @@ export default function NotificationMenu({ onClose, onNavigate }: NotificationMe
     return date.toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleNotifClick = (n: any) => {
-    if (!n.read) markAsRead(n.id);
+  const handleNotifClick = (n: Notification) => {
+    if (!n.read) void markAsRead(n.id);
     if (n.orderId) {
       onNavigate(n.orderId);
     }
@@ -42,7 +43,7 @@ export default function NotificationMenu({ onClose, onNavigate }: NotificationMe
             {unreadCount > 0 && <p className="text-xs text-green-600 font-bold">{unreadCount} non lue(s)</p>}
           </div>
           <div className="flex items-center gap-2">
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <button 
                 onClick={() => markAllAsRead()}
                 className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg transition-all"
@@ -70,7 +71,8 @@ export default function NotificationMenu({ onClose, onNavigate }: NotificationMe
                 {!n.read && <div className="absolute top-4 right-4 w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
                 <div className="flex gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${n.read ? 'bg-gray-100' : 'bg-green-100'}`}>
-                    {typeIcons[n.type]}
+                    {typeIcons[n.type] ?? '🔔'}
+
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm leading-tight ${n.read ? 'font-semibold text-gray-700' : 'font-black text-gray-900'}`}>{n.title}</p>

@@ -1,0 +1,3 @@
+-- Ajouter les colonnes GPS à la table orders
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gps_lat DOUBLE PRECISION;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gps_lng DOUBLE PRECISION;

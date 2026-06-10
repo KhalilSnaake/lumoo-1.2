@@ -143,7 +143,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
             onClick={(e) => { e.preventDefault(); onClose(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
           >
-            <Logo size={36} />
+            <Logo size={200} />
             <div>
               <h1 className="text-lg font-extrabold text-gray-800 group-hover:text-green-600 transition-colors">Mon compte</h1>
               <p className="text-xs text-gray-400 capitalize">{user.role} Lumoo</p>

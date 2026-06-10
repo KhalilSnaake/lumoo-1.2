@@ -65,12 +65,12 @@ export default function HeroSection() {
             <div className="text-green-200 text-xs sm:text-sm">Produits</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold">24h</div>
+            <div className="text-2xl sm:text-3xl font-bold">3h</div>
             <div className="text-green-200 text-xs sm:text-sm">Livraison</div>
           </div>
           <div className="text-center">
             <div className="text-2xl sm:text-3xl font-bold">100%</div>
-            <div className="text-green-200 text-xs sm:text-sm">Frais</div>
+            <div className="text-green-200 text-xs sm:text-sm">Fiable</div>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function HeroSection() {
       {/* Wave shape */}
       <div className="absolute bottom-0 left-0 right-0">
         <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0 40L48 35C96 30 192 20 288 22C384 24 480 38 576 44C672 50 768 48 864 42C960 36 1056 26 1152 24C1248 22 1344 28 1392 31L1440 34V80H0V40Z" fill="white"/>
+          <path d="M0 40L48 35C96 30 192 20 288 22C384 24 480 38 576 44C672 50 768 48 864 42C960 36 1056 26 1152 24C1248 22 1344 28 1392 31L1440 34V80H0V40Z" fill="#f9fafb"/>
         </svg>
       </div>
     </section>

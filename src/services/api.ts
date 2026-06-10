@@ -34,6 +34,10 @@ function rowToOrder(row: any, items: any[]): Order {
     receivedBy: row.received_by || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    // Payment proof fields
+    paymentProofUrl: row.payment_proof_url,
+    paymentProofFileName: row.payment_proof_file_name,
+    paymentProofUploadedAt: row.payment_proof_uploaded_at,
   };
 }
 
@@ -74,7 +78,6 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
     order_id: orderId,
     product_id: item.product.id,
     name: item.product.name,
-    emoji: '📦',
     price: item.product.price,
     quantity: item.quantity,
     unit: item.product.unit,
@@ -190,6 +193,10 @@ export async function apiUpdateOrder(orderId: string, updates: Partial<Omit<Orde
   if (updates.status !== undefined) updateData.status = updates.status;
   if (updates.livreurId !== undefined) updateData.livreur_id = updates.livreurId;
   if (updates.receivedBy !== undefined) updateData.received_by = updates.receivedBy;
+  // Payment proof fields
+  if (updates.paymentProofUrl !== undefined) updateData.payment_proof_url = updates.paymentProofUrl;
+  if (updates.paymentProofFileName !== undefined) updateData.payment_proof_file_name = updates.paymentProofFileName;
+  if (updates.paymentProofUploadedAt !== undefined) updateData.payment_proof_uploaded_at = updates.paymentProofUploadedAt;
 
   const { data, error } = await supabase
     .from('orders')
@@ -210,7 +217,6 @@ export async function apiUpdateOrder(orderId: string, updates: Partial<Omit<Orde
       order_id: orderId,
       product_id: item.productId,
       name: item.name,
-      emoji: item.emoji || '📦',
       price: item.price,
       quantity: item.quantity,
       unit: item.unit,

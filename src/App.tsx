@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { CartProvider, useCart } from './context/CartContext';
 import { OrderProvider } from './context/OrderContext';
-import { ProductProvider } from './context/ProductContext';
+import { ProductProvider, useProducts } from './context/ProductContext';
+import { CategoryProvider, useCategories } from './context/CategoryContext';
+
 import { AdProvider } from './context/AdContext';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SearchProvider } from './context/SearchContext';
+import { ContactMessagesProvider } from './context/ContactMessagesContext';
+
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import ProductGrid from './components/ProductGrid';
@@ -22,33 +27,44 @@ import AuthPage from './components/AuthPage';
 import Footer from './components/Footer';
 import OrderTracker from './components/OrderTracker';
 import AdBanner from './components/AdBanner';
+import ContactForm from './components/ContactForm';
 
 export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
         <NotificationProvider>
-          <ProductProvider>
-            <AdProvider>
-              <CartProvider>
-                <OrderProvider>
-                  <MainApp />
-                </OrderProvider>
-              </CartProvider>
-            </AdProvider>
-          </ProductProvider>
+          <CategoryProvider>
+            <ProductProvider>
+              <SearchProvider>
+                <AdProvider>
+                  <CartProvider>
+                    <OrderProvider>
+                      <ContactMessagesProvider>
+                        <MainApp />
+                      </ContactMessagesProvider>
+                    </OrderProvider>
+                  </CartProvider>
+                </AdProvider>
+              </SearchProvider>
+            </ProductProvider>
+          </CategoryProvider>
         </NotificationProvider>
       </AuthProvider>
+
     </ToastProvider>
   );
 }
 
 function MainApp() {
   const { user, showAuth, setShowAuth } = useAuth();
+  const { products } = useProducts();
+  const { categories } = useCategories();
   const [showAdmin, setShowAdmin] = useState<string | boolean>(false);
   const [showUsers, setShowUsers] = useState(false);
   const [showDashboard, setShowDashboard] = useState<string | boolean>(false);
   const [showTracker, setShowTracker] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
 
   // Expose admin open to window for quick access from dashboard
   (window as any).openAdmin = () => setShowAdmin(true);
@@ -60,6 +76,7 @@ function MainApp() {
         onOpenTracker={() => setShowTracker(true)}
         onOpenDashboard={() => setShowDashboard(true)}
         onOpenOrder={(id) => setShowDashboard(id)}
+        onOpenContact={() => setShowContactForm(true)}
       />
       <HeroSection />
       
@@ -107,6 +124,8 @@ function MainApp() {
 
       <Footer
         onOpenTracker={() => setShowTracker(true)}
+        products={products}
+        categories={categories}
       />
 
       {showTracker && <OrderTracker onClose={() => setShowTracker(false)} />}
@@ -119,6 +138,9 @@ function MainApp() {
       {showAdmin && <AdminPanel initialOrderId={typeof showAdmin === 'string' ? showAdmin : undefined} onClose={() => setShowAdmin(false)} />}
       {showUsers && <UserManagement onClose={() => setShowUsers(false)} />}
       {showDashboard && <UserDashboard initialOrderId={typeof showDashboard === 'string' ? showDashboard : undefined} onClose={() => setShowDashboard(false)} />}
+
+      {/* Contact Form Modal */}
+      {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
 
       {/* Auth Modal */}
       {showAuth && (

@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useToast } from '../context/ToastContext';
-import { products } from '../data/products';
+import { useProducts } from '../context/ProductContext';
+import { useCategories } from '../context/CategoryContext';
 import { PaymentMethod, Product } from '../types';
-import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
+import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import { supabase } from '../lib/supabase';
 import ProductModal from './ProductModal';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
 
-type CategoryFilter = 'all' | 'alimentaire' | 'legumes';
+type CategoryFilter = 'all' | number;
 type BuilderStep = 'compose' | 'livraison' | 'paiement' | 'confirmation';
 
 export default function CartBuilder() {
@@ -43,15 +44,46 @@ export default function CartBuilder() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatPrice = (p: number) => p.toLocaleString('fr-FR');
+  const { products } = useProducts();
+  const { categories } = useCategories();
 
-  const filteredProducts = products.filter(p => {
-    const matchCat = filter === 'all' || p.category === filter;
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
+  // Comptes par catégorie (par ID, depuis la base) - comme dans ProductGrid
+  const categoryCounts = products.reduce<Record<number, number>>((acc, p) => {
+    if (p.published === false) return acc;
+    if (p.category_id == null) return acc;
+    acc[p.category_id] = (acc[p.category_id] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const filteredProducts = products.filter((product: Product) => {
+    // Filtre par catégorie : on compare par ID (plus fiable que le slug) - comme dans ProductGrid
+    const matchesCategory = filter === 'all' ? true : product.category_id === filter;
+
+    const matchesSearch = !search.toLowerCase().trim() ||
+      product.name.toLowerCase().includes(search.toLowerCase()) ||
+      product.description.toLowerCase().includes(search.toLowerCase());
+
+    return matchesCategory && matchesSearch && product.published !== false;
   });
 
   const getQty = (id: number) => items.find(i => i.product.id === id)?.quantity || 0;
+
+  // Boutons = catégories venant de Supabase (CategoryContext) - comme dans ProductGrid
+  // On exclut les catégories qui n'ont aucun produit publié.
+  const getCategoryFilterButtons = () => {
+    const totalCount = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+    const dynamicCategories = categories.filter((c) => (categoryCounts[c.id] ?? 0) > 0);
+
+    const buttons: Array<{ key: CategoryFilter; label: string; count: number }> = [
+      { key: 'all', label: 'Tous', count: totalCount },
+      ...dynamicCategories.map((c) => {
+        const label = c.name || c.slug || `Catégorie ${c.id}`;
+        return { key: c.id, label, count: categoryCounts[c.id] ?? 0 };
+      }),
+    ];
+
+    return buttons;
+  };
 
   const handleClose = () => {
     setIsCartBuilderOpen(false);
@@ -123,7 +155,6 @@ export default function CartBuilder() {
 
   const paymentMethods = [
     { id: 'orange_money', name: 'Orange Money', icon: <OrangeMoneyLogo />, desc: 'Payez avec votre compte Orange Money' },
-    { id: 'moov_money', name: 'Moov Money', icon: <MoovMoneyLogo />, desc: 'Payez avec votre compte Moov Money' },
     { id: 'wave', name: 'Wave', icon: <WaveLogo />, desc: 'Payez avec votre compte Wave' },
     { id: 'livraison', name: 'Paiement à la livraison', icon: <CashLogo />, desc: 'Payez en espèces à la réception' },
   ];
@@ -145,16 +176,7 @@ export default function CartBuilder() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-            ) : (
-              <button
-                onClick={handleClose}
-                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-              >
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+            ) : null}
             <div>
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 {step === 'compose' && '🛒 Créer mon panier'}
@@ -165,32 +187,46 @@ export default function CartBuilder() {
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="hidden sm:flex items-center gap-2">
-            {[
-              { key: 'compose', label: '1. Panier', emoji: '🛒' },
-              { key: 'livraison', label: '2. Livraison', emoji: '📋' },
-              { key: 'paiement', label: '3. Paiement', emoji: '💳' },
-              { key: 'confirmation', label: '4. Confirmation', emoji: '✅' },
-            ].map((s, i) => {
-              const stepOrder = ['compose', 'livraison', 'paiement', 'confirmation'];
-              const currentIdx = stepOrder.indexOf(step);
-              const isActive = step === s.key;
-              const isDone = currentIdx > i;
-              return (
-                <div key={s.key} className="flex items-center gap-2">
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    isActive ? 'bg-green-500 text-white shadow-lg shadow-green-200' :
-                    isDone ? 'bg-green-100 text-green-700' :
-                    'bg-gray-100 text-gray-400'
-                  }`}>
-                    <span>{s.emoji}</span>
-                    <span className="hidden md:inline">{s.label}</span>
+          <div className="flex items-center gap-4">
+            {/* Progress bar - moved back to right side */}
+            <div className="hidden sm:flex items-center gap-2">
+              {[
+                { key: 'compose', label: '1. Panier', emoji: '🛒' },
+                { key: 'livraison', label: '2. Livraison', emoji: '📋' },
+                { key: 'paiement', label: '3. Paiement', emoji: '💳' },
+                { key: 'confirmation', label: '4. Confirmation', emoji: '✅' },
+              ].map((s, i) => {
+                const stepOrder = ['compose', 'livraison', 'paiement', 'confirmation'];
+                const currentIdx = stepOrder.indexOf(step);
+                const isActive = step === s.key;
+                const isDone = currentIdx > i;
+                return (
+                  <div key={s.key} className="flex items-center gap-2">
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      isActive ? 'bg-green-500 text-white shadow-lg shadow-green-200' :
+                      isDone ? 'bg-green-100 text-green-700' :
+                      'bg-gray-100 text-gray-400'
+                    }`}>
+                      <span>{s.emoji}</span>
+                      <span className="hidden md:inline">{s.label}</span>
+                    </div>
+                    {i < 3 && <div className={`w-6 h-0.5 ${isDone ? 'bg-green-400' : 'bg-gray-200'}`} />}
                   </div>
-                  {i < 3 && <div className={`w-6 h-0.5 ${isDone ? 'bg-green-400' : 'bg-gray-200'}`} />}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* Close button moved to far right */}
+            {step === 'compose' && (
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -202,20 +238,18 @@ export default function CartBuilder() {
           <div className="h-full flex flex-col lg:flex-row">
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-                <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                  <div className="relative flex-1">
+                <div className="flex flex-col gap-3 mb-6">
+                  <div className="relative">
                     <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un produit..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none" />
                   </div>
-                  <div className="flex gap-2">
-                    {[
-                      { key: 'all' as CategoryFilter, label: 'Tous', icon: '🏪' },
-                      { key: 'alimentaire' as CategoryFilter, label: 'Alimentaires', icon: '📦' },
-                      { key: 'legumes' as CategoryFilter, label: 'Légumes', icon: '🥬' },
-                    ].map(f => (
-                      <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === f.key ? 'bg-green-500 text-white shadow-lg shadow-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{f.icon} {f.label}</button>
+                  <div className="flex flex-wrap gap-2">
+                    {getCategoryFilterButtons().map(f => (
+                      <button key={String(f.key)} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filter === f.key ? 'bg-green-500 text-white shadow-lg shadow-green-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-green-50'}`}>
+                        {f.label}
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -344,10 +378,10 @@ export default function CartBuilder() {
           </div>
         )}
 
-        {/* ──── STEP: CONFIRMATION ──── */}
-        {step === 'confirmation' && (
-          <div className="h-full flex items-center justify-center p-6">
-            <div className="text-center space-y-6 max-w-sm w-full">
+         {/* ──── STEP: CONFIRMATION ──── */}
+         {step === 'confirmation' && (
+           <div className="h-full flex items-center justify-center p-6">
+             <div className="text-center space-y-6 max-w-md w-full">
               <span className="text-7xl block animate-bounce-in">🎉</span>
               <h3 className="text-2xl font-black text-gray-800">Commande réussie !</h3>
               <div className="bg-green-50 p-6 rounded-3xl border border-green-100 space-y-2">

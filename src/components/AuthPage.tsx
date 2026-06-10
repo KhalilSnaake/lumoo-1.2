@@ -85,11 +85,11 @@ export default function AuthPage() {
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           className="text-center mb-8 block hover:opacity-80 transition-opacity group"
         >
-          <div className="flex justify-center mb-3 group-hover:scale-110 transition-transform">
-            <Logo size={56} />
+          <div className="flex justify-center mb-3 ">
+            <Logo size={200} />
           </div>
-          <h1 className="text-xl font-extrabold text-gray-800">Lumoo</h1>
-          <p className="text-xs text-gray-400">Alimentation & Légumes Frais</p>
+          {/* <h1 className="text-xl font-extrabold text-gray-800">Lumoo</h1> */}
+          <p className="text-xs text-gray-400">Votre marché en ligne livrés chez vous.</p>
         </a>
 
         {/* Card */}
@@ -162,12 +162,7 @@ export default function AuthPage() {
                 ) : 'Se connecter'}
               </button>
 
-              {/* Default credentials hint */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1">
-                <p className="text-[10px] font-bold text-amber-700">💡 Compte admin par défaut :</p>
-                <p className="text-[10px] text-amber-600">Email : <span className="font-mono font-bold">admin@lumoo.ml</span></p>
-                <p className="text-[10px] text-amber-600">Mot de passe : <span className="font-mono font-bold">admin123</span></p>
-              </div>
+              
             </form>
           )}
 

@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useState } from 'react';
 import ProductModal from './ProductModal';
+import { optimizeImageUrl } from '../utils/images';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +14,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { showToast } = useToast();
   const [added, setAdded] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const cartItem = items.find(item => item.product.id === product.id);
 
@@ -34,11 +36,24 @@ export default function ProductCard({ product }: ProductCardProps) {
       >
         {/* Product Image Area */}
         <div className="relative h-44 bg-gray-50 flex items-center justify-center overflow-hidden">
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+          {/* Skeleton loader */}
+          {!imgLoaded && (
+            <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          <img 
+            src={optimizeImageUrl(product.image_url, 'card')} 
+            alt={product.name} 
+            onLoad={() => setImgLoaded(true)}
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
+          />
           
           {/* Étiquettes dynamiques avec icônes et couleurs */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-            {product.category === 'legumes' && (
+            {(typeof product.category === 'string'
+              ? product.category === 'legumes'
+              : product.category?.slug === 'legumes') && (
               <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-wider shadow-sm flex items-center gap-1">
                 <span>🥬</span> FRAIS
               </span>

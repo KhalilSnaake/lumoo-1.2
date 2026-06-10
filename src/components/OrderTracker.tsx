@@ -15,7 +15,7 @@ const paymentNames: Record<PaymentMethod, string> = {
   orange_money: 'Orange Money',
   moov_money: 'Moov Money',
   wave: 'Wave',
-  livraison: 'Livraison',
+  livraison: 'Paiement à la livraison',
 };
 
 const statusLabels: Record<OrderStatus, { label: string; emoji: string; color: string; bg: string; desc: string }> = {

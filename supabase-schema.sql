@@ -28,7 +28,11 @@ CREATE TABLE IF NOT EXISTS orders (
   total_price INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'en_attente' CHECK (status IN ('en_attente', 'confirmee', 'en_preparation', 'en_livraison', 'livree', 'annulee')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Champs pour les preuves de paiement
+  payment_proof_url TEXT,
+  payment_proof_file_name TEXT,
+  payment_proof_uploaded_at TIMESTAMPTZ
 );
 
 -- 3. Table des articles de commande
@@ -73,7 +77,23 @@ CREATE POLICY "Public insert order_items" ON order_items FOR INSERT WITH CHECK (
 CREATE POLICY "Public update order_items" ON order_items FOR UPDATE USING (true);
 CREATE POLICY "Public delete order_items" ON order_items FOR DELETE USING (true);
 
--- 7. Table des publicités
+-- 7. Table des catégories
+ALTER TABLE categories DROP COLUMN IF EXISTS emoji;
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Enable RLS for categories
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+
+-- Policies (open for now, align with products/admin CRUD)
+CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
+CREATE POLICY "Admin CRUD categories" ON categories FOR ALL USING (true);
+
+-- 8. Table des publicités
 CREATE TABLE IF NOT EXISTS ads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -89,7 +109,48 @@ ALTER TABLE ads ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read ads" ON ads FOR SELECT USING (true);
 CREATE POLICY "Admin CRUD ads" ON ads FOR ALL USING (true);
 
--- 8. Insérer l'admin par défaut
+-- 9. Table des messages de contact
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  subject TEXT,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  is_read BOOLEAN DEFAULT FALSE,
+  responded_at TIMESTAMPTZ,
+  response TEXT
+);
+
+-- Index pour les messages de contact
+CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON contact_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_is_read ON contact_messages(is_read);
+
+-- RLS pour les messages de contact
+ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+
+-- Remove any existing restrictive policies
+DROP POLICY IF EXISTS "Public read contact_messages" ON contact_messages;
+DROP POLICY IF EXISTS "Public insert contact_messages" ON contact_messages;
+DROP POLICY IF EXISTS "Admin update contact_messages" ON contact_messages;
+DROP POLICY IF EXISTS "Allow authenticated users to read their own messages" ON contact_messages;
+
+-- Create new policies with proper admin access
+CREATE POLICY "Allow public insert for contact form submissions"
+ON contact_messages FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY "Allow admin full access to contact messages"
+ON contact_messages FOR ALL
+USING (auth.role() = 'admin');
+
+-- Simple policy for all authenticated users to read messages (for admin panel)
+CREATE POLICY "Allow all authenticated users to read messages"
+ON contact_messages FOR SELECT
+USING (auth.uid() IS NOT NULL);
+
+-- 10. Insérer l'admin par défaut
 INSERT INTO users (id, name, email, phone, password, role, avatar)
 VALUES ('USR-ADMIN-001', 'Admin Lumoo', 'admin@lumoo.ml', '+223 77 99 68 58', 'admin123', 'admin', '👨‍💼')
 ON CONFLICT (id) DO NOTHING;

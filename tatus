@@ -1,0 +1,26 @@
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/AdminPanel.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/AuthPage.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Footer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Header.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/HeroSection.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Logo.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/PaymentLogos.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/ProductGrid.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/context/ProductContext.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/types.ts', LF will be replaced by CRLF the next time Git touches it
+package-lock.json
+package.json
+src/App.tsx
+src/components/AdminPanel.tsx
+src/components/AuthPage.tsx
+src/components/Footer.tsx
+src/components/Header.tsx
+src/components/HeroSection.tsx
+src/components/Logo.tsx
+src/components/PaymentLogos.tsx
+src/components/ProductGrid.tsx
+src/context/ProductContext.tsx
+src/types.ts

@@ -2,6 +2,7 @@ import { Product } from '../types';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useState } from 'react';
+import { optimizeImageUrl } from '../utils/images';
 
 interface ProductModalProps {
   product: Product;
@@ -28,7 +29,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
         {/* Image */}
         <div className="h-64 flex items-center justify-center relative bg-gray-50 overflow-hidden">
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+          <img src={optimizeImageUrl(product.image_url, 'modal')} alt={product.name} className="w-full h-full object-cover" />
           <div className="absolute top-4 left-4 flex flex-col gap-2">
             {product.category === 'legumes' && (
               <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-lg flex items-center gap-1.5">

@@ -1,18 +1,26 @@
+import type { Category } from './types/category';
+
 export interface Product {
   id: number;
   name: string;
   description: string;
   price: number;
   unit: string;
-  category: 'alimentaire' | 'legumes';
+  category_id?: number | null;
+  // `category` peut être un objet Category (jointure Supabase) OU un slug
+  // string utilisé par le seed local `data/products.ts` et par les filtres
+  // `p.category === 'legumes'` dans les composants.
+  category?: string | Category | null;
   image_url: string;
-  labels?: string; 
+  labels?: string;
   stock_quantity: number;
   bgColor: string;
   inStock: boolean;
   published: boolean;
+  is_popular?: boolean;
   createdAt?: string;
 }
+
 
 export interface CartItem {
   product: Product;
@@ -51,6 +59,10 @@ export interface Order {
   receivedBy?: string;
   createdAt: string;
   updatedAt: string;
+  // Payment proof fields
+  paymentProofUrl?: string | null;
+  paymentProofFileName?: string | null;
+  paymentProofUploadedAt?: string | null;
 }
 
 export interface OrderContextType {
@@ -96,7 +108,20 @@ export interface Ad {
   link_url?: string;
   position: AdPosition;
   active: boolean;
+  created_at?: string;
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
   created_at: string;
+  is_read?: boolean;
+  responded_at?: string;
+  response?: string;
 }
 
 export interface AdContextType {

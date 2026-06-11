@@ -175,7 +175,7 @@ export default function ContactForm({ onClose }: { onClose: () => void }) {
                 disabled={isSubmitting}
                 className="w-full py-3.5 bg-green-600 text-white font-extrabold rounded-xl shadow-lg hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                {isSubmitting ? 'Envoi en cours...' : 'ENVoyer LE MESSAGE'}
+                {isSubmitting ? 'Envoi...' : 'Envoyer le message'}
               </button>
             </div>
           </form>

@@ -543,7 +543,6 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
                    >
                     📲 Notif
                    </button>
-                   <button onClick={(e) => { e.stopPropagation(); setSelectedOrderDetails(order); }} className="px-3 py-1.5 bg-gray-50 text-gray-600 text-[10px] font-bold rounded-lg transition-all hover:bg-gray-100">👁️</button>
                    <button onClick={(e) => { e.stopPropagation(); uploadPaymentProof(order); }} className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-lg transition-all hover:bg-blue-100">📄 Preuve</button>
                    <button onClick={async (e) => { e.stopPropagation(); if(confirm('Supprimer cette commande ?')) { await deleteOrder(order.id); showToast('Commande supprimée', 'error'); } }} className="px-3 py-1.5 bg-red-50 text-red-500 text-[10px] font-bold rounded-lg transition-all hover:bg-red-100">🗑</button>
                  </div>

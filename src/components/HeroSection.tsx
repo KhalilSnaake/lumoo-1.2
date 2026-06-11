@@ -65,7 +65,7 @@ export default function HeroSection() {
             <div className="text-green-200 text-xs sm:text-sm">Produits</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold">3h</div>
+            <div className="text-2xl sm:text-3xl font-bold">2h</div>
             <div className="text-green-200 text-xs sm:text-sm">Livraison</div>
           </div>
           <div className="text-center">

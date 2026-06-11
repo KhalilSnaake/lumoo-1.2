@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { ContactMessage } from '../types';
 import { useToast } from './ToastContext';
@@ -9,6 +9,7 @@ type ContactMessagesContextType = {
   loading: boolean;
   refreshMessages: () => Promise<void>;
   markAsRead: (messageId: string) => Promise<void>;
+  markAsUnread: (messageId: string) => Promise<void>;
   sendReply: (messageId: string, response: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   createTestMessage: () => Promise<void>;
@@ -18,11 +19,11 @@ const ContactMessagesContext = createContext<ContactMessagesContextType | undefi
 
 export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
   // Fetch messages from Supabase
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
       console.log('📧 Fetching contact messages...');
@@ -34,11 +35,13 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('❌ Error fetching messages:', error);
-        showToast('Erreur de chargement des messages', 'error');
+        showToast('Erreur de chargement des messages: ' + error.message, 'error');
+        setMessages([]);
+        setLoading(false);
         return;
       }
 
-      console.log('✅ Messages loaded:', data?.length || 0);
+      console.log('✅ Messages loaded:', data?.length || 0, data);
       const normalized = (data || []).map((m: any) => ({
         ...m,
         is_read: m.is_read ?? false,
@@ -47,14 +50,17 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       console.error('❌ Unexpected error:', err);
       showToast('Erreur inattendue', 'error');
+      setMessages([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  // Initial fetch
+  // Initial fetch on mount
   useEffect(() => {
+    console.log('📧 ContactMessagesProvider mounted, fetching messages...');
     fetchMessages();
+    return () => {};
   }, []);
 
   // Real-time subscription for new messages
@@ -97,6 +103,26 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
       showToast('Message marqué comme lu ✅');
     } catch (err: any) {
       console.error('Error marking as read:', err);
+      showToast('Erreur lors de la mise à jour', 'error');
+    }
+  };
+
+  const markAsUnread = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ is_read: false })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, is_read: false } : msg
+      ));
+
+      showToast('Message marqué comme non lu ✅');
+    } catch (err: any) {
+      console.error('Error marking as unread:', err);
       showToast('Erreur lors de la mise à jour', 'error');
     }
   };
@@ -186,6 +212,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
         loading,
         refreshMessages,
         markAsRead,
+        markAsUnread,
         sendReply,
         deleteMessage,
         createTestMessage,

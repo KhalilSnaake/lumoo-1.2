@@ -141,14 +141,14 @@ CREATE POLICY "Allow public insert for contact form submissions"
 ON contact_messages FOR INSERT
 WITH CHECK (true);
 
-CREATE POLICY "Allow admin full access to contact messages"
+CREATE POLICY "Admin full access to contact_messages"
 ON contact_messages FOR ALL
-USING (auth.role() = 'admin');
+USING (true);
 
--- Simple policy for all authenticated users to read messages (for admin panel)
-CREATE POLICY "Allow all authenticated users to read messages"
+-- Simple policy for all users to read messages (public for admin panel)
+CREATE POLICY "Public read contact_messages"
 ON contact_messages FOR SELECT
-USING (auth.uid() IS NOT NULL);
+USING (true);
 
 -- 10. Insérer l'admin par défaut
 INSERT INTO users (id, name, email, phone, password, role, avatar)

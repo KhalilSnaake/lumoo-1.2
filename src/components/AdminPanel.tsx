@@ -1467,6 +1467,7 @@ function MessagesTab() {
     unreadCount,
     refreshMessages,
     markAsRead,
+    markAsUnread,
     sendReply,
     deleteMessage,
 
@@ -1476,190 +1477,188 @@ function MessagesTab() {
   const [replyContent, setReplyContent] = useState('');
   const { showToast } = useToast();
 
+  // Filtering and search state
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Filter messages based on filter and search
+  const filteredMessages = messages.filter(msg => {
+    // Filter by read status
+    if (filter === 'unread' && msg.is_read) return false;
+    if (filter === 'read' && !msg.is_read) return false;
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      return (
+        msg.name?.toLowerCase().includes(query) ||
+        msg.email?.toLowerCase().includes(query) ||
+        msg.subject?.toLowerCase().includes(query) ||
+        msg.message?.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
+  // Toggle selection
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedIds(newSet);
+  };
+
+  // Toggle all selection
+  const toggleAllSelection = () => {
+    if (selectedIds.size === filteredMessages.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredMessages.map(m => m.id)));
+    }
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Supprimer ${selectedIds.size} message(s) ?`)) return;
+    for (const id of selectedIds) {
+      await deleteMessage(id);
+    }
+    setSelectedIds(new Set());
+  };
+
+  // Mark all as read
+  const handleMarkAllAsRead = async () => {
+    for (const msg of filteredMessages.filter(m => !m.is_read)) {
+      await markAsRead(msg.id);
+    }
+  };
+
+  // Helper functions
+  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getAvatarColor = (name: string) => {
+    const colors = ['bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 'bg-blue-500', 'bg-indigo-500', 'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  };
+  const formatDate = (date: string) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 86400000) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    if (diff < 604800000) return d.toLocaleDateString('fr-FR', { weekday: 'short' });
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="font-bold text-gray-800">💬 {messages.length} messages</h3>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={async () => {
-              await refreshMessages();
-              showToast('Messages rafraîchis ✅');
-            }}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-            title="Rafraîchir les messages"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Toolbar - Modern Gmail style */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shrink-0">
+        <input
+          type="checkbox"
+          checked={selectedIds.size === filteredMessages.length && filteredMessages.length > 0}
+          onChange={toggleAllSelection}
+          className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+        />
+        <div className="flex items-center gap-1">
+          <button onClick={refreshMessages} className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Rafraîchir">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           </button>
-          {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-              {unreadCount} non lu{unreadCount > 1 ? 's' : ''}
-            </span>
-          )}
+          <button onClick={handleMarkAllAsRead} className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Tout marquer lu">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          </button>
+          <button onClick={handleBulkDelete} disabled={selectedIds.size === 0} className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-30" title="Supprimer">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Rechercher dans les messages" className="w-full pl-10 pr-4 py-2 bg-gray-100 border border-transparent rounded-full text-sm outline-none focus:bg-white focus:border-gray-300 transition-all" />
+            <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+        </div>
+        <div className="flex bg-gray-100 rounded-full p-1">
+          {(['all', 'unread', 'read'] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all ${filter === f ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              {f === 'all' ? 'Tous' : f === 'unread' ? `Non lus (${unreadCount})` : 'Lus'}
+            </button>
+          ))}
         </div>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin w-8 h-8 border-3 border-green-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">Chargement des messages...</p>
-        </div>
+        <div className="flex-1 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-3 border-green-500 border-t-transparent rounded-full" /></div>
       ) : messages.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <p className="text-lg mb-2">📧 Boîte de réception vide</p>
-          <p className="text-sm">Aucun message reçu pour le moment</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+          <div className="w-24 h-24 mb-4 rounded-full bg-gray-200 flex items-center justify-center"><svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg></div>
+          <p className="text-lg font-medium">Aucun message</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex-1 flex overflow-hidden">
           {/* Message List */}
-          <div className="lg:col-span-1 space-y-2 max-h-[60vh] overflow-y-auto hide-scrollbar">
-            {messages.map(message => (
-              <div
-                key={message.id}
-                onClick={() => {
-                  setSelectedMessage(message);
-                  if (!message.is_read) markAsRead(message.id);
-                }}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all hover:shadow-md ${selectedMessage?.id === message.id ? 'border-green-500 bg-green-50' : 'border-gray-100'} ${!message.is_read ? 'bg-blue-50' : 'bg-white'}`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-gray-800 text-sm truncate">{message.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{message.email}</p>
-                    <p className="text-xs text-gray-400 mt-1 truncate">{message.subject || 'Aucun sujet'}</p>
+          <div className={`${selectedMessage ? 'w-1/3' : 'w-full'} border-r border-gray-200 bg-white overflow-y-auto`}>
+            {filteredMessages.map(message => (
+              <div key={message.id} onClick={() => { setSelectedMessage(message); if (!message.is_read) markAsRead(message.id); }}
+                className={`flex items-center gap-3 px-4 py-3 border-b cursor-pointer transition-colors hover:bg-gray-50 ${selectedMessage?.id === message.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'} ${!message.is_read ? 'bg-gray-50' : 'bg-white'}`}>
+                <div className="shrink-0">{!message.is_read && <div className="w-3 h-3 bg-blue-500 rounded-full" />}</div>
+                <div className={`w-10 h-10 rounded-full ${getAvatarColor(message.name)} flex items-center justify-center text-white font-bold text-sm shrink-0`}>{getInitials(message.name)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline gap-2">
+                    <p className={`truncate ${!message.is_read ? 'font-bold text-gray-900' : 'text-gray-700'} text-sm`}>{message.name}</p>
+                    <p className="text-xs text-gray-400 shrink-0">{formatDate(message.created_at)}</p>
                   </div>
-                  {!message.is_read && (
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-1" />
-                  )}
+                  <p className="text-xs text-gray-500 truncate">{message.subject || 'Aucun sujet'}</p>
+                  <p className="text-xs text-gray-400 truncate">{message.message?.slice(0, 60)}...</p>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  {new Date(message.created_at).toLocaleString('fr-FR', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                  })}
-                </p>
               </div>
             ))}
           </div>
 
           {/* Message Detail */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            {selectedMessage ? (
-              <div className="space-y-6">
-                <div className="flex justify-between items-start">
+          {selectedMessage && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-full ${getAvatarColor(selectedMessage.name)} flex items-center justify-center text-white font-bold`}>{getInitials(selectedMessage.name)}</div>
                   <div>
-                    <h4 className="font-bold text-gray-800 text-lg">{selectedMessage.name}</h4>
+                    <h3 className="font-bold text-gray-900">{selectedMessage.name}</h3>
                     <p className="text-sm text-gray-500">{selectedMessage.email}</p>
-                    {selectedMessage.phone && (
-                      <p className="text-sm text-gray-500 mt-1">📞 {selectedMessage.phone}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(selectedMessage.email);
-                        showToast('Email copié dans le presse-papiers ✅');
-                      }}
-                      className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                      title="Copier l'email"
-                    >
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => deleteMessage(selectedMessage.id)}
-                      className="w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors text-red-600"
-                      title="Supprimer le message"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
                   </div>
                 </div>
-
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Sujet</p>
-                  <p className="text-sm text-gray-700">{selectedMessage.subject || 'Aucun sujet spécifié'}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 mr-2">{new Date(selectedMessage.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                  <button onClick={() => selectedMessage.is_read ? markAsUnread(selectedMessage.id) : markAsRead(selectedMessage.id)} className={`p-2 rounded-full transition-colors ${selectedMessage.is_read ? 'hover:bg-gray-100' : 'bg-blue-50'}`} title={selectedMessage.is_read ? 'Marquer non lu' : 'Marquer lu'}>
+                    <svg className={`w-5 h-5 ${selectedMessage.is_read ? 'text-gray-600' : 'text-blue-600'}`} fill={selectedMessage.is_read ? 'none' : 'currentColor'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  </button>
+                  <button onClick={() => navigator.clipboard.writeText(selectedMessage.email)} className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Copier email">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  </button>
+                  <button onClick={() => deleteMessage(selectedMessage.id)} className="p-2 hover:bg-red-50 rounded-full transition-colors text-red-500" title="Supprimer">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
                 </div>
-
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Message</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>
+              </div>
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+                  <p className="text-sm font-medium text-gray-400 mb-2">{selectedMessage.subject || 'Aucun sujet'}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>
+                  {selectedMessage.phone && <p className="mt-4 pt-4 border-t text-sm text-gray-500">📞 {selectedMessage.phone}</p>}
                 </div>
-
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Reçu le</p>
-                  <p className="text-sm text-gray-700">
-                    {new Date(selectedMessage.created_at).toLocaleString('fr-FR', {
-                      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit'
-                    })}
-                  </p>
-                </div>
-
-                {/* Response Section */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Répondre au client</p>
-                  <textarea
-                    value={replyContent}
-                    onChange={e => setReplyContent(e.target.value)}
-                    placeholder="Écrivez votre réponse ici..."
-                    rows={5}
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none transition-all"
-                  />
+                {/* Reply */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <textarea value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Écrire une réponse..." rows={4} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none" />
                   <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={async () => {
-                        if (selectedMessage) {
-                          await sendReply(selectedMessage.id, replyContent);
-                          setReplyContent('');
-                        }
-                      }}
-                      disabled={!replyContent.trim()}
-                      className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 disabled:opacity-50 transition-all"
-                    >
-                      Envoyer la réponse
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (selectedMessage) {
-                          const mailtoLink = `mailto:${selectedMessage.email}?subject=Ré: ${selectedMessage.subject || 'Votre message sur Lumoo'}&body=${encodeURIComponent(replyContent)}`;
-                          window.open(mailtoLink, '_blank');
-                        }
-                      }}
-                      disabled={!replyContent.trim()}
-                      className="px-4 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
-                    >
-                      📧 Email
-                    </button>
+                    <button onClick={async () => { if (selectedMessage) { await sendReply(selectedMessage.id, replyContent); setReplyContent(''); } }} disabled={!replyContent.trim()} className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-all">Envoyer</button>
                   </div>
                 </div>
-
-                {/* Existing Response */}
-                {selectedMessage.response && (
-                  <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-2">Réponse envoyée</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedMessage.response}</p>
-                    <p className="text-[10px] text-gray-400 mt-2">
-                      Répondu le {new Date(selectedMessage.responded_at || '').toLocaleString('fr-FR', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                )}
+                {selectedMessage.response && <div className="bg-green-50 rounded-xl p-4 border border-green-200 mt-4"><p className="text-xs font-bold text-green-700 mb-2">Réponse envoyée</p><p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedMessage.response}</p></div>}
               </div>
-            ) : (
-              <div className="text-center py-12 text-gray-400">
-                <p className="text-lg mb-2">👆 Sélectionnez un message</p>
-                <p className="text-sm">Cliquez sur un message dans la liste pour voir les détails</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

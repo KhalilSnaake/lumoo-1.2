@@ -26,10 +26,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up">
         {/* Image */}
-        <div className="h-64 flex items-center justify-center relative bg-gray-50 overflow-hidden">
-          <img src={optimizeImageUrl(product.image_url, 'modal')} alt={product.name} className="w-full h-full object-cover" />
+        <div className="h-96 flex items-center justify-center relative bg-gray-50 overflow-hidden">
+          <img src={optimizeImageUrl(product.image_url, 'modal')} alt={product.name} className="w-full h-full object-contain" />
           <div className="absolute top-4 left-4 flex flex-col gap-2">
             {product.category === 'legumes' && (
               <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-lg flex items-center gap-1.5">
@@ -100,10 +100,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             </div>
             <button
               onClick={handleAdd}
-              className="flex-1 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-200 transition-all active:scale-95 text-sm flex flex-col items-center"
+              className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-200 transition-all active:scale-95 text-sm flex items-center justify-center gap-2"
             >
-              <span className="text-xs uppercase opacity-80 mb-0.5 font-black">Ajouter au panier</span>
-              <span className="text-lg">{formatPrice(product.price * qty)} FCFA</span>
+              <span className="text-xs uppercase opacity-80 font-black">Ajouter au panier</span>
+              <span className="text-sm font-bold">{formatPrice(product.price * qty)}</span>
             </button>
           </div>
         </div>

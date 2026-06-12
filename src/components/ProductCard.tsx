@@ -92,9 +92,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">
             {product.name}
           </h3>
-          <p className="text-xs text-gray-400 mb-3 line-clamp-2 flex-1 leading-relaxed">
-            {product.description}
-          </p>
+          <p className="text-xs text-gray-400 mb-3 line-clamp-2 flex-1 leading-relaxed">{product.description}</p>
           <div className="flex items-center justify-between">
             <div>
               <span className="text-lg font-extrabold text-green-600">

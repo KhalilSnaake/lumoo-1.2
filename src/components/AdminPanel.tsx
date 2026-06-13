@@ -11,7 +11,7 @@ import { Order, OrderStatus, PaymentMethod, Product, Ad, AdPosition } from '../t
 import { User, UserRole } from '../types/auth';
 import { ContactMessage } from '../types';
 import Logo from './Logo';
-import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
+import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import { supabase } from '../lib/supabase';
 import ExcelJS from 'exceljs';
 import readXlsxFile from 'read-excel-file/browser';
@@ -19,14 +19,12 @@ import MaliPhoneInput from './MaliPhoneInput';
 
 const paymentLogos: Record<PaymentMethod, React.ReactNode> = {
   orange_money: <OrangeMoneyLogo className="w-4 h-4" />,
-  moov_money: <MoovMoneyLogo className="w-4 h-4" />,
   wave: <WaveLogo className="w-4 h-4" />,
   livraison: <CashLogo className="w-4 h-4" />,
 };
 
 const paymentNames: Record<PaymentMethod, string> = {
   orange_money: 'Orange Money',
-  moov_money: 'Moov Money',
   wave: 'Wave',
   livraison: 'Paiement à la livraison',
 };

@@ -243,7 +243,7 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <div className="absolute top-0 right-0 w-[280px] h-full bg-white shadow-2xl animate-slide-in flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <div className="flex items-center gap-2.5"><Logo size={32} /><span className="font-bold text-gray-800">Menu</span></div>
+              <div className="flex items-center gap-2.5"><Logo size={200} /></div>
               <button onClick={() => setMenuOpen(false)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
                 <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>

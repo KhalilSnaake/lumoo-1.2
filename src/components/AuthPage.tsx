@@ -3,13 +3,20 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
 import MaliPhoneInput from './MaliPhoneInput';
+import { supabase } from '../lib/supabase';
+
 
 export default function AuthPage() {
   const { login, register } = useAuth();
   const { showToast } = useToast();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Reset password
+  const [resetEmailOrPhone, setResetEmailOrPhone] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
 
   // Login fields
   const [email, setEmail] = useState('');
@@ -23,12 +30,13 @@ export default function AuthPage() {
   const [regConfirm, setRegConfirm] = useState('');
   const regRole = 'client' as const;
 
-  const handleTabChange = (newMode: 'login' | 'register') => {
+  const handleTabChange = (newMode: 'login' | 'register' | 'reset') => {
     setMode(newMode);
     setError('');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
@@ -47,7 +55,34 @@ export default function AuthPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmailOrPhone) return;
+
+    setResetLoading(true);
+    try {
+      // Dans ce projet, la DB mappe l'user sur email.
+      // Si tu veux supporter téléphone : dupliquer create_password_reset_token côté DB.
+      const { data, error } = await supabase.rpc('create_password_reset_token', {
+        p_user_email: resetEmailOrPhone,
+      });
+
+      if (error) throw error;
+
+      // data est le token ; on l’affiche pour test local
+      showToast('Lien de réinitialisation généré. (Token généré côté DB)');
+
+      // Option : vider le champ.
+      setResetEmailOrPhone('');
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la demande de reset');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!regName || !regEmail || !regPhone || !regPassword) return;
     setError('');
@@ -83,6 +118,7 @@ export default function AuthPage() {
         <a 
           href="/"
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+
           className="text-center mb-8 block hover:opacity-80 transition-opacity group"
         >
           <div className="flex justify-center mb-3 ">
@@ -162,20 +198,66 @@ export default function AuthPage() {
                 ) : 'Se connecter'}
               </button>
 
-              
+              <div className="pt-2 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => { setMode('reset'); setError(''); }}
+                  className="text-xs font-semibold text-gray-500 hover:text-green-600"
+                >
+                  Mot de passe oublié ?
+                </button>
+                <span />
+              </div>
             </form>
+
           )}
 
           {/* Register Form */}
+          {/* Reset Form */}
+          {mode === 'reset' && (
+            <form onSubmit={handleResetPassword} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">📧 Email</label>
+                <input
+                  type="text"
+                  value={resetEmailOrPhone}
+                  onChange={e => setResetEmailOrPhone(e.target.value)}
+                  placeholder="Email"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-200 transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {resetLoading ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Génération...</>
+                ) : 'Envoyer le lien de réinitialisation'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(''); }}
+                className="w-full py-3.5 bg-gray-50 text-gray-700 font-bold rounded-xl hover:bg-gray-100 transition-all text-sm"
+              >
+                ← Retour à la connexion
+              </button>
+            </form>
+          )}
+
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="p-6 space-y-4">
+
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">👤 Nom complet</label>
                 <input
                   type="text"
                   value={regName}
                   onChange={e => setRegName(e.target.value)}
-                  placeholder="Ex: Amadou Diallo"
+                  placeholder="Ex: Amadou SANGARE"
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />
@@ -186,7 +268,7 @@ export default function AuthPage() {
                   type="email"
                   value={regEmail}
                   onChange={e => setRegEmail(e.target.value)}
-                  placeholder="amadou@email.com"
+                  placeholder="asangare@lumoo.ml"
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />

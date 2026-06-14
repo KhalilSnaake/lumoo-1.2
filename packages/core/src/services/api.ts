@@ -1,5 +1,5 @@
 import { Order, OrderStatus, CreateOrderInput } from '../types';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabaseClient';
 
 function generateOrderId(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -44,6 +44,7 @@ function rowToOrder(row: any, items: any[]): Order {
 // ─── API Functions ───
 
 export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
+  const supabase = getSupabase();
   const orderId = generateOrderId();
   const deliveryCode = Math.floor(1000 + Math.random() * 9000).toString(); 
   const now = new Date().toISOString();
@@ -112,6 +113,7 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
 }
 
 export async function apiGetOrders(): Promise<Order[]> {
+  const supabase = getSupabase();
   // Fetch orders
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
@@ -140,6 +142,7 @@ export async function apiGetOrders(): Promise<Order[]> {
 }
 
 export async function apiGetOrder(orderId: string): Promise<Order | undefined> {
+  const supabase = getSupabase();
   const { data: order, error } = await supabase
     .from('orders')
     .select('*')
@@ -157,6 +160,7 @@ export async function apiGetOrder(orderId: string): Promise<Order | undefined> {
 }
 
 export async function apiUpdateOrderStatus(orderId: string, status: OrderStatus): Promise<Order | null> {
+  const supabase = getSupabase();
   const now = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -177,6 +181,7 @@ export async function apiUpdateOrderStatus(orderId: string, status: OrderStatus)
 }
 
 export async function apiUpdateOrder(orderId: string, updates: Partial<Omit<Order, 'id' | 'createdAt'>>): Promise<Order | null> {
+  const supabase = getSupabase();
   const now = new Date().toISOString();
   const updateData: any = { updated_at: now };
 
@@ -235,6 +240,7 @@ export async function apiUpdateOrder(orderId: string, updates: Partial<Omit<Orde
 }
 
 export async function apiDeleteOrder(orderId: string): Promise<boolean> {
+  const supabase = getSupabase();
   // order_items will be cascade deleted
   const { error } = await supabase
     .from('orders')
@@ -257,6 +263,7 @@ export interface DashboardStats {
 }
 
 export async function apiGetStats(): Promise<DashboardStats> {
+  const supabase = getSupabase();
   const { data: orders } = await supabase
     .from('orders')
     .select('status, total_price, created_at');

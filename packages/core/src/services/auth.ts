@@ -1,5 +1,5 @@
 import { User, RegisterInput } from '../types/auth';
-import { supabase } from '../lib/supabase';
+import { getSupabase, getAuthRedirectUrl } from '../lib/supabaseClient';
 
 const PROFILE_COLUMNS = 'id, name, email, phone, role, avatar, blocked, created_at';
 
@@ -18,11 +18,13 @@ function toUser(authUserId: string, authEmail: string | undefined, profile: any)
 }
 
 async function fetchProfile(userId: string): Promise<any | null> {
+  const supabase = getSupabase();
   const { data } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).single();
   return data;
 }
 
 export async function apiLogin(email: string, password: string): Promise<User | null> {
+  const supabase = getSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
     password,
@@ -41,6 +43,7 @@ export async function apiLogin(email: string, password: string): Promise<User | 
 }
 
 export async function apiRegister(input: RegisterInput): Promise<User | null> {
+  const supabase = getSupabase();
   const email = input.email.trim().toLowerCase();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -59,10 +62,12 @@ export async function apiCreateUser(_input: RegisterInput): Promise<User | null>
 }
 
 export async function apiLogout(): Promise<void> {
+  const supabase = getSupabase();
   await supabase.auth.signOut();
 }
 
 export async function apiGetCurrentUser(): Promise<User | null> {
+  const supabase = getSupabase();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
   const profile = await fetchProfile(session.user.id);
@@ -74,6 +79,7 @@ export async function apiGetCurrentUser(): Promise<User | null> {
 }
 
 export async function apiGetAllUsers(): Promise<User[]> {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_COLUMNS)
@@ -84,6 +90,7 @@ export async function apiGetAllUsers(): Promise<User[]> {
 
 // Met à jour le profil (name/phone/role/avatar/blocked). Email/mot de passe NON modifiables ici.
 export async function apiUpdateUser(id: string, updates: Partial<User>): Promise<User | null> {
+  const supabase = getSupabase();
   const updateData: any = {};
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.phone !== undefined) updateData.phone = updates.phone;
@@ -113,14 +120,16 @@ export async function seedDefaultAdmin() {
 
 // Changement de SON PROPRE mot de passe (utilisateur connecté).
 export async function apiUpdateOwnPassword(newPassword: string): Promise<void> {
+  const supabase = getSupabase();
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message || 'Erreur lors du changement de mot de passe');
 }
 
 // Demande de reset par email.
 export async function apiRequestPasswordReset(email: string): Promise<void> {
+  const supabase = getSupabase();
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-    redirectTo: `${window.location.origin}`,
+    redirectTo: getAuthRedirectUrl(),
   });
   if (error) throw new Error(error.message || 'Erreur lors de la demande de réinitialisation');
 }

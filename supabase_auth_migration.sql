@@ -94,8 +94,9 @@ create trigger on_auth_user_created
 -- ============================================================
 
 -- B.1 Effacer les données de test liées aux anciens IDs maison
-truncate table public.notifications;
-truncate table public.orders;
+--     CASCADE : vide aussi les tables qui référencent orders (ex. order_items).
+truncate table public.notifications cascade;
+truncate table public.orders cascade;
 
 -- B.2 orders.user_id : text 'USR-...' -> uuid (références auth.users)
 alter table public.orders drop constraint if exists orders_user_id_fkey;

@@ -11,9 +11,11 @@
 
 L'app est aujourd'hui une **SPA web** (React 19 + Vite + Tailwind 4) avec un backend **Supabase** (Postgres + RPC + Storage + Realtime). On veut **ajouter une app mobile React Native** en réutilisant un maximum de logique côté backend/API, **sans dupliquer** le code d'accès aux données.
 
+> **Note sur l'auth :** la migration vers **Supabase Auth est déjà réalisée** sur la branche parallèle `supabase-auth-migration` (worktree `C:/Dev/lumoo-auth`). `services/auth.ts` utilise déjà `supabase.auth.*` + une table `profiles`. La branche `react-native-terrain` (worktree `C:/Dev/lumoo-mali`) en hérite. **Ce lot ne refait pas l'auth** ; il la déplace dans le core et la rend compatible mobile.
+
 Trois couplages au web bloquent aujourd'hui ce partage :
 
-1. **`localStorage`** pour la session d'auth (synchrone, web-only) → le mobile a besoin de `AsyncStorage` (asynchrone).
+1. **Stockage de session non injectable** : le client Supabase est créé sans adaptateur de stockage. Sur web, Supabase Auth persiste la session dans `localStorage` (défaut navigateur) ; sur mobile il faut lui passer **`AsyncStorage`** via `createClient(url, key, { auth: { storage } })`, sinon la session ne persiste pas.
 2. **`import.meta.env`** pour la config Supabase (spécifique à Vite) → le mobile utilise un autre système d'environnement.
 3. **Logique métier mélangée** au code web (le client Supabase est créé à l'import, l'accès aux données est éparpillé dans les contexts React).
 
@@ -24,8 +26,8 @@ Trois couplages au web bloquent aujourd'hui ce partage :
 | Décision | Choix |
 |----------|-------|
 | Structure du code | **Monorepo + package `core` partagé** (npm workspaces) |
-| Migration vers Supabase Auth | **Reportée** — on garde l'auth maison actuelle, mais on la rend compatible mobile (terrain prêt pour la migration ultérieure) |
-| Abstraction d'auth | **Interface (port) `AuthProvider` dans le core** : impl. actuelle = auth maison ; Supabase Auth = future impl. droppable sans toucher aux écrans |
+| Système d'auth | **Supabase Auth** — déjà implémenté (branche `supabase-auth-migration` : auth.users + table `profiles` + RLS). Le terrain se base dessus, on ne le refait pas. |
+| Travail auth dans ce lot | **Aucune réécriture d'auth** : on déplace le service Supabase Auth + `AuthContext` dans le core et on rend le client + le stockage de session compatibles mobile (`AsyncStorage`). |
 | Ampleur | **Fondation + premiers écrans mobiles**, découpée en lots ; **Lot 1** ici |
 | Périmètre des écrans | Répliquer l'app web à terme ; **Lot 1 = écrans publics sans auth** |
 | Partage de code | **Partager la logique, UI séparée** : core partagé ; web en Tailwind, mobile en NativeWind |
@@ -37,10 +39,10 @@ Trois couplages au web bloquent aujourd'hui ce partage :
 ## 3. Découpage en lots
 
 - **Lot 1 (ce design)** — Le terrain + tranche publique : monorepo, package `core`, app web réorganisée (comportement inchangé), app Expo qui démarre, écrans **Accueil + Catalogue + Fiche produit + Panier** (lecture/local, **aucune auth**).
-- **Lot 2 (plus tard)** — Auth (réutilise l'auth maison rendue RN-ready) + Mon compte + Mes commandes + Suivi de commande + passage de commande.
+- **Lot 2 (plus tard)** — Écrans authentifiés mobiles (Supabase Auth déjà en place) : Connexion/Inscription + Mon compte + Mes commandes + Suivi de commande + passage de commande.
 - **Lot 3 (plus tard)** — Espace livreur.
 - **Hors mobile** — Admin (reste web-only).
-- **Reportée** — Migration vers Supabase Auth (voir `2026-06-14-supabase-auth-migration-design.md`).
+- **Déjà fait, hors de ce lot** — Migration vers Supabase Auth (branche `supabase-auth-migration` ; voir `2026-06-14-supabase-auth-migration-design.md`).
 
 Chaque lot suit son propre cycle spec → plan → implémentation.
 
@@ -85,14 +87,16 @@ Aujourd'hui `src/lib/supabase.ts` crée le client **à l'import**, avec `import.
 export interface CoreConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
-  storage: AsyncStorageLike;   // injecté par l'app hôte
+  storage?: AsyncStorageLike;   // stockage de session injecté par l'app hôte
 }
+// crée le client via createClient(url, key, { auth: { storage, persistSession: true, autoRefreshToken: true } })
 export function initCore(config: CoreConfig): SupabaseClient { /* crée + mémorise le singleton */ }
 export function getSupabase(): SupabaseClient { /* renvoie le singleton, erreur si non initialisé */ }
 ```
 
-- **Web** : `initCore({ supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseAnonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, storage: webStorage })`.
-- **Mobile** : `initCore({ … depuis expo-constants/app.config, storage: AsyncStorage })`.
+- **Web** : `initCore({ supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseAnonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })` — `storage` omis : Supabase utilise `localStorage` par défaut dans le navigateur.
+- **Mobile** : `initCore({ … depuis expo-constants/app.config, storage: AsyncStorage })` + `detectSessionInUrl: false`.
+- Le `storage` injecté est passé à la config `auth` de `supabase-js` : c'est ce qui fait **persister la session Supabase Auth** sur chaque plateforme.
 - Le core **ne référence plus aucune variable d'environnement** directement.
 
 ### 5.2 Interface `Storage` asynchrone
@@ -106,41 +110,26 @@ export interface AsyncStorageLike {
 }
 ```
 
-- **Web** : adaptateur autour de `localStorage` (enveloppé pour renvoyer des `Promise`).
-- **Mobile** : `@react-native-async-storage/async-storage` (déjà async).
-- La session de l'**auth maison** (`services/auth.ts`) passe par cette interface au lieu de `localStorage` en dur. `saveSession`/`getSession` deviennent asynchrones ; `apiGetCurrentUser` est déjà async.
+- **Web** : non requis — Supabase utilise `localStorage` par défaut dans le navigateur.
+- **Mobile** : `@react-native-async-storage/async-storage` (déjà async), injecté dans `auth.storage`.
+- Cette interface correspond exactement au contrat attendu par l'option `auth.storage` de `supabase-js`. Aucune gestion de session « maison » à reporter : **Supabase Auth gère la session** ; on ne fait que lui fournir le bon stockage par plateforme.
 
 ### 5.3 Contenu déplacé dans le core
 
 - **types/** : `auth.ts`, `category.ts`, `notifications.ts`, et les types produits/commandes (`types.ts` éclaté/normalisé).
-- **services/** : `auth.ts` (auth maison conservée, mais via la factory + Storage), `api.ts` (commandes/stats).
+- **services/** : `auth.ts` (**service Supabase Auth déjà migré** : `signInWithPassword`, `signUp`, `getSession`, `signOut`, `resetPasswordForEmail`, `updateUser`, lecture `profiles`), `api.ts` (commandes/stats). Déplacés tels quels, branchés sur le client via `getSupabase()`.
 - **context/** (React pur, fonctionne web + mobile) : `ProductContext`, `CategoryContext`, `CartContext`, `SearchContext`, `AdContext`, `AuthContext`, et les autres contexts de données. Les deux apps les importent depuis `@lumoo/core`.
 - **Restent côté app** : tout ce qui rend de l'UI (ex. la partie *rendu* de `ToastContext` — l'état peut vivre dans le core, l'affichage reste par plateforme), les composants, les assets, `utils/images`.
 
-### 5.4 Abstraction d'auth (port) — préparer Supabase Auth
+### 5.4 Note sur l'auth (pas de « port » à inventer)
 
-On sait qu'on basculera **bientôt** sur Supabase Auth. Pour que ce soit un simple remplacement (et non une réécriture des écrans), le core expose une **interface `AuthProvider` (port)** que `AuthContext` consomme, sans savoir quelle implémentation est derrière :
-
-```ts
-// packages/core/src/services/auth/AuthProvider.ts (forme indicative)
-export interface AuthProvider {
-  getCurrentUser(): Promise<User | null>;
-  login(identifier: string, password: string): Promise<User | null>;
-  register(input: RegisterInput): Promise<User | null>;
-  logout(): Promise<void>;
-  // étendu au Lot 2 / migration : resetPassword, onAuthStateChange…
-}
-```
-
-- **Implémentation actuelle (ce lot)** : `LegacyAuthProvider` = l'auth maison existante (`login_user` RPC + table `users`), mais branchée sur la factory Supabase + l'interface `Storage` async (donc déjà compatible mobile).
-- **Implémentation future (migration)** : `SupabaseAuthProvider` = `supabase.auth.*`. La bascule consistera à changer **l'implémentation injectée**, pas les écrans ni `AuthContext`.
-- `AuthContext` reçoit l'implémentation via `initCore(config)` (ou un défaut). Les écrans ne dépendent que du contexte, jamais de l'implémentation.
+La bascule vers **Supabase Auth est déjà faite** (branche `supabase-auth-migration`). Il n'y a donc **pas** d'abstraction « port » à créer (YAGNI) : le core contient directement le service Supabase Auth + `AuthContext`. Le seul travail « terrain » côté auth est de rendre le **client et le stockage de session** indépendants de la plateforme (§5.1/§5.2) — ce dont Supabase Auth a justement besoin sur mobile (`AsyncStorage`). Les écrans authentifiés mobiles viendront au **Lot 2**.
 
 ## 6. App web — impact
 
 - **Déplacée** dans `apps/web/` ; le code des composants, `App.tsx` et Tailwind **ne changent quasiment pas**.
 - Les imports de contexts/services/types pointent vers `@lumoo/core`.
-- `main.tsx` appelle `initCore({ … , storage: webStorage })` **avant** de monter les providers.
+- `main.tsx` appelle `initCore({ supabaseUrl, supabaseAnonKey })` (stockage par défaut `localStorage`) **avant** de monter les providers.
 - **Garde-fou non négociable** : à chaque étape du déménagement, l'app web doit **builder et fonctionner comme avant**.
 
 ## 7. App mobile Expo — Lot 1
@@ -178,8 +167,9 @@ export interface AuthProvider {
 | Risque | Garde-fou |
 |--------|-----------|
 | Casser l'app web pendant le déménagement | Build + lancement web vérifiés à **chaque** étape |
-| `localStorage` synchrone → interface async | Interface `Storage` async ; `apiGetCurrentUser` déjà async ; ajuster les rares appels sync |
+| Session Supabase Auth non persistée sur mobile | Passer `AsyncStorage` à `auth.storage` ; `detectSessionInUrl: false` ; persistance validée au Lot 2 |
 | Supabase sur RN (polyfills manquants) | Smoke-test : le mobile lit les produits dès le départ |
+| Branche basée sur la migration auth pas encore dans `main` | Dev sur `react-native-terrain` (contient déjà Supabase Auth) ; **merger après** que la migration auth soit dans `main`, en rebasant le terrain sur `main` |
 | Contexts couplés au web | On ne déplace que les contexts **agnostiques** ; l'UI (Toast…) reste par plateforme |
 | Imports web cachés dans le core (ex. `window`, assets) | Revue à l'extraction ; le core ne doit dépendre d'aucune API DOM |
 | Divergence des versions React web (19) / RN | Aligner React/React-DOM/React-Native compatibles ; le core ne fixe pas React (peerDependency) |
@@ -187,9 +177,9 @@ export interface AuthProvider {
 
 ## 10. Hors périmètre (YAGNI pour ce lot)
 
-- Lots 2 et 3 (auth, compte, commandes, suivi, livreur).
+- Lots 2 et 3 (écrans authentifiés, compte, commandes, suivi, livreur).
 - Admin sur mobile (reste web-only).
-- Migration vers Supabase Auth.
+- (Re)faire la migration vers Supabase Auth — **déjà réalisée** sur `supabase-auth-migration`.
 - UI universelle partagée (react-native-web / Tamagui) — on a choisi UI séparée.
 - Notifications push mobiles, deep links, build store (EAS) — phases ultérieures.
 
@@ -200,6 +190,6 @@ export interface AuthProvider {
 3. L'app **mobile** démarre (Expo) et affiche les **vrais produits depuis Supabase** via le core.
 4. Sur mobile : parcours **Accueil → Catalogue → Fiche produit → ajouter au panier → voir le panier**.
 5. **Zéro duplication** de la logique d'accès aux données entre web et mobile.
-6. Le client Supabase et la session sont **indépendants de la plateforme** (terrain prêt pour la migration Supabase Auth et pour le Lot 2).
-7. L'auth passe par l'interface `AuthProvider` : remplacer l'implémentation maison par Supabase Auth plus tard ne touchera **ni les écrans ni `AuthContext`**.
+6. Le client Supabase et le **stockage de session** sont **indépendants de la plateforme** (`AsyncStorage` injectable) — terrain prêt pour les écrans authentifiés du Lot 2.
+7. Le service **Supabase Auth** et `AuthContext` vivent dans `@lumoo/core` et sont consommés à l'identique par le web (Lot 1) ; le mobile les réutilisera tels quels au Lot 2.
 8. Le **déploiement Vercel preview** de la PR réussit grâce au `vercel.json` racine (validation avant merge sur `main`).

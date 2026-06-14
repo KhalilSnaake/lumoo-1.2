@@ -3,6 +3,11 @@ import { supabase } from '../lib/supabase';
 
 const SESSION_KEY = 'lumoo_session';
 
+// Colonnes lisibles côté client : JAMAIS `password`.
+// Après le verrouillage SQL (PARTIE 2), la clé anon n'a plus le droit de lire `password`,
+// donc on ne fait plus de `select('*')` sur la table users.
+const USER_COLUMNS = 'id, name, email, phone, role, avatar, blocked, created_at';
+
 const roleAvatars: Record<UserRole, string> = {
   admin: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
   client: 'https://api.dicebear.com/7.x/avataaars/svg?seed=client',
@@ -34,7 +39,6 @@ function rowToUser(row: any): User {
     name: row.name,
     email: row.email,
     phone: row.phone,
-    password: row.password,
     role: row.role,
     createdAt: row.created_at,
     avatar: row.avatar,
@@ -42,136 +46,94 @@ function rowToUser(row: any): User {
   };
 }
 
+// Appelle la fonction serveur `login_user` (SECURITY DEFINER) : elle vérifie le mot de passe
+// en interne (hash bcrypt) et ne renvoie JAMAIS le mot de passe.
+async function callLoginRpc(identifier: string, password: string): Promise<any | null> {
+  const { data, error } = await supabase.rpc('login_user', {
+    identifier,
+    pass: password,
+  });
+  if (error) {
+    console.error('API Login Exception:', error);
+    throw new Error('Erreur de connexion');
+  }
+  return Array.isArray(data) ? (data[0] ?? null) : (data ?? null);
+}
+
 export async function apiLogin(identifier: string, password: string): Promise<User | null> {
   const cleanId = identifier.trim();
-  const lowerId = cleanId.toLowerCase();
-  
-  try {
-    // 1. Try to find user by email first
-    const { data: byEmail, error: errorEmail } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', lowerId)
-      .eq('password', password)
-      .maybeSingle();
 
-    if (errorEmail) throw new Error('Erreur de connexion (Email)');
-    if (byEmail) {
-      const user = rowToUser(byEmail);
-      if (user.blocked) throw new Error('Votre compte est bloqué. Contactez un administrateur.');
-      saveSession(user);
-      return user;
-    }
+  // Tentative directe (email ou téléphone tel que saisi)
+  let row = await callLoginRpc(cleanId, password);
 
-    // 2. If not found, try to find by phone
-    // We try exactly as entered
-    const { data: byPhone, error: errorPhone } = await supabase
-      .from('users')
-      .select('*')
-      .eq('phone', cleanId)
-      .eq('password', password)
-      .maybeSingle();
-
-    if (errorPhone) throw new Error('Erreur de connexion (Phone)');
-    if (byPhone) {
-      const user = rowToUser(byPhone);
-      if (user.blocked) throw new Error('Votre compte est bloqué. Contactez un administrateur.');
-      saveSession(user);
-      return user;
-    }
-
-    // 3. One more try for phone: stripping all non-digits except +
+  // Repli téléphone : on retente en ne gardant que les chiffres et le +
+  if (!row) {
     const strippedPhone = cleanId.replace(/[^\d+]/g, '');
-    if (strippedPhone !== cleanId) {
-      const { data: byStrippedPhone } = await supabase
-        .from('users')
-        .select('*')
-        .eq('phone', strippedPhone)
-        .eq('password', password)
-        .maybeSingle();
-        
-      if (byStrippedPhone) {
-        const user = rowToUser(byStrippedPhone);
-        if (user.blocked) throw new Error('Votre compte est bloqué.');
-        saveSession(user);
-        return user;
-      }
+    if (strippedPhone && strippedPhone !== cleanId) {
+      row = await callLoginRpc(strippedPhone, password);
     }
-
-    return null; // Not found or wrong password
-  } catch (err: any) {
-    console.error('API Login Exception:', err);
-    throw err;
   }
+
+  if (!row) return null; // Identifiant introuvable ou mauvais mot de passe
+
+  const user = rowToUser(row);
+  if (user.blocked) throw new Error('Votre compte est bloqué. Contactez un administrateur.');
+  saveSession(user);
+  return user;
 }
 
 export async function apiRegister(input: RegisterInput): Promise<User | null> {
   const normalizedEmail = input.email.toLowerCase().trim();
   const normalizedPhone = input.phone.trim();
-  
-  const user: User = {
-    id: generateId(),
+  const id = generateId();
+  const createdAt = new Date().toISOString();
+  const avatar = roleAvatars[input.role];
+
+  // Le mot de passe est envoyé en clair puis hashé côté base par le trigger `trg_hash_user_password`.
+  const { error } = await supabase.from('users').insert({
+    id,
     name: input.name,
     email: normalizedEmail,
     phone: normalizedPhone,
     password: input.password,
     role: input.role,
-    createdAt: new Date().toISOString(),
-    avatar: roleAvatars[input.role],
+    avatar,
+    created_at: createdAt,
     blocked: false,
-  };
-
-  const { error } = await supabase.from('users').insert({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    password: user.password,
-    role: user.role,
-    avatar: user.avatar,
-    created_at: user.createdAt,
-    blocked: false
   });
 
   if (error) throw new Error(error.message || 'Erreur lors de la création du compte');
+
+  // L'objet de session ne contient pas le mot de passe.
+  const user: User = { id, name: input.name, email: normalizedEmail, phone: normalizedPhone, role: input.role, createdAt, avatar, blocked: false };
   saveSession(user);
   return user;
-
 }
 
 export async function apiCreateUser(input: RegisterInput): Promise<User | null> {
   const normalizedEmail = input.email.toLowerCase().trim();
   const normalizedPhone = input.phone.trim();
-  
-  const user: User = {
-    id: generateId(),
+  const id = generateId();
+  const createdAt = new Date().toISOString();
+  const avatar = roleAvatars[input.role];
+
+  const { error } = await supabase.from('users').insert({
+    id,
     name: input.name,
     email: normalizedEmail,
     phone: normalizedPhone,
     password: input.password,
     role: input.role,
-    createdAt: new Date().toISOString(),
-    avatar: roleAvatars[input.role],
+    avatar,
+    created_at: createdAt,
     blocked: false,
-  };
-
-  const { error } = await supabase.from('users').insert({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    password: user.password,
-    role: user.role,
-    avatar: user.avatar,
-    created_at: user.createdAt,
-    blocked: false
   });
 
   if (error) {
     console.error('Supabase error:', error);
     return null;
   }
-  return user;
+  return { id, name: input.name, email: normalizedEmail, phone: normalizedPhone, role: input.role, createdAt, avatar, blocked: false };
 }
 
 export async function apiLogout(): Promise<void> {
@@ -181,8 +143,8 @@ export async function apiLogout(): Promise<void> {
 export async function apiGetCurrentUser(): Promise<User | null> {
   const session = getSession();
   if (!session) return null;
-  const { data } = await supabase.from('users').select('*').eq('id', session.id).single();
-  if (!data || data.blocked) {
+  const { data } = await supabase.from('users').select(USER_COLUMNS).eq('id', session.id).single();
+  if (!data || (data as any).blocked) {
     saveSession(null);
     return null;
   }
@@ -190,7 +152,7 @@ export async function apiGetCurrentUser(): Promise<User | null> {
 }
 
 export async function apiGetAllUsers(): Promise<User[]> {
-  const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('users').select(USER_COLUMNS).order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.map(rowToUser);
 }
@@ -200,12 +162,13 @@ export async function apiUpdateUser(id: string, updates: Partial<User>): Promise
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.email !== undefined) updateData.email = updates.email.toLowerCase().trim();
   if (updates.phone !== undefined) updateData.phone = updates.phone;
+  // Le nouveau mot de passe est envoyé en clair puis hashé côté base par le trigger.
   if (updates.password !== undefined) updateData.password = updates.password;
   if (updates.role !== undefined) updateData.role = updates.role;
   if (updates.avatar !== undefined) updateData.avatar = updates.avatar;
   if (updates.blocked !== undefined) updateData.blocked = updates.blocked;
 
-  const { data, error } = await supabase.from('users').update(updateData).eq('id', id).select().single();
+  const { data, error } = await supabase.from('users').update(updateData).eq('id', id).select(USER_COLUMNS).single();
   if (error || !data) return null;
   const user = rowToUser(data);
   const session = getSession();

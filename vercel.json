@@ -1,0 +1,5 @@
+{
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace @lumoo/web",
+  "outputDirectory": "apps/web/dist"
+}

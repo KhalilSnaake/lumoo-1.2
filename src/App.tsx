@@ -28,6 +28,7 @@ import Footer from './components/Footer';
 import OrderTracker from './components/OrderTracker';
 import AdBanner from './components/AdBanner';
 import ContactForm from './components/ContactForm';
+import ResetPasswordModal from './components/ResetPasswordModal';
 
 export default function App() {
   return (
@@ -57,7 +58,7 @@ export default function App() {
 }
 
 function MainApp() {
-  const { user, showAuth, setShowAuth } = useAuth();
+  const { user, showAuth, setShowAuth, passwordRecovery } = useAuth();
   const { products } = useProducts();
   const { categories } = useCategories();
   const [showAdmin, setShowAdmin] = useState<string | boolean>(false);
@@ -141,6 +142,9 @@ function MainApp() {
 
       {/* Contact Form Modal */}
       {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
+
+      {/* Reset password (après clic sur le lien email) */}
+      {passwordRecovery && <ResetPasswordModal />}
 
       {/* Auth Modal */}
       {showAuth && (

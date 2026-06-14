@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
 import MaliPhoneInput from './MaliPhoneInput';
-import { supabase } from '../lib/supabase';
+import { apiRequestPasswordReset } from '../services/auth';
 
 
 export default function AuthPage() {
@@ -57,34 +57,17 @@ export default function AuthPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const identifier = resetEmailOrPhone.trim();
-    if (!identifier) return;
-
+    const email = resetEmailOrPhone.trim();
+    if (!email) return;
     setResetLoading(true);
     setError('');
-
     try {
-      // Cette app n'utilise pas Supabase Auth : pas de reset automatique par email.
-      // On enregistre la demande dans la boîte de réception admin (contact_messages),
-      // un administrateur réinitialise ensuite le mot de passe depuis le panneau Admin.
-      const isEmail = identifier.includes('@');
-      const { error } = await supabase.from('contact_messages').insert({
-        name: 'Demande de réinitialisation',
-        email: isEmail ? identifier.toLowerCase() : 'non-fourni@lumoo.ml',
-        phone: isEmail ? null : identifier,
-        subject: 'Réinitialisation de mot de passe',
-        message: `Un utilisateur demande la réinitialisation de son mot de passe. Identifiant fourni : ${identifier}. Merci de le recontacter et de réinitialiser le mot de passe depuis le panneau Admin.`,
-      });
-
-      if (error) throw error;
-
-      showToast(
-        'Votre demande a bien été envoyée. Un administrateur vous recontactera pour réinitialiser votre mot de passe.'
-      );
+      await apiRequestPasswordReset(email);
+      showToast('Si un compte existe, un email de réinitialisation a été envoyé.');
       setResetEmailOrPhone('');
       setMode('login');
     } catch (err: any) {
-      setError(err?.message || 'Erreur lors de l\'envoi de la demande');
+      setError(err?.message || 'Erreur lors de la demande');
     } finally {
       setResetLoading(false);
     }
@@ -182,12 +165,12 @@ export default function AuthPage() {
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">📧 Email ou Téléphone</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">📧 Email</label>
                 <input
-                  type="text"
+                  type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="Email ou N° de téléphone"
+                  placeholder="votre@email.com"
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />

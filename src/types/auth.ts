@@ -5,7 +5,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  password: string;
+  password?: string; // jamais lu côté client : la vérification se fait côté serveur (fonction login_user)
   role: UserRole;
   createdAt: string;
   avatar: string;

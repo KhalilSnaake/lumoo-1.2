@@ -71,3 +71,21 @@ WITH CHECK (
 -- Par sécurité, on empêche la suppression.
 DROP POLICY IF EXISTS "Users admin can delete profiles" ON users;
 
+-- 5) Policy INSERT
+-- Permet l’inscription depuis le front (IDs générés côté client).
+-- Si vous migrez vers Supabase Auth (auth.uid), il faudra renforcer cette règle.
+DROP POLICY IF EXISTS "Users public can insert" ON users;
+CREATE POLICY "Users public can insert"
+ON users FOR INSERT
+WITH CHECK (true);
+
+-- 6) Rule for non-authenticated users (role = anon)
+-- Si votre projet différencie anonymous vs authenticated, cette policy couvre les insert depuis anon.
+DROP POLICY IF EXISTS "Users anon can insert" ON users;
+CREATE POLICY "Users anon can insert"
+ON users FOR INSERT
+TO anon
+WITH CHECK (true);
+
+
+

@@ -133,9 +133,10 @@ export async function apiRegister(input: RegisterInput): Promise<User | null> {
     blocked: false
   });
 
-  if (error) return null;
+  if (error) throw new Error(error.message || 'Erreur lors de la création du compte');
   saveSession(user);
   return user;
+
 }
 
 export async function apiCreateUser(input: RegisterInput): Promise<User | null> {

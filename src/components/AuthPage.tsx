@@ -57,25 +57,28 @@ export default function AuthPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmailOrPhone) return;
+    const email = resetEmailOrPhone.trim();
+    if (!email) return;
 
     setResetLoading(true);
+    setError('');
+
     try {
-      // Dans ce projet, la DB mappe l'user sur email.
-      // Si tu veux supporter téléphone : dupliquer create_password_reset_token côté DB.
-      const { data, error } = await supabase.rpc('create_password_reset_token', {
-        p_user_email: resetEmailOrPhone,
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        // Vous pouvez ajuster l'URL vers votre page de changement de mot de passe.
+        // Par défaut Supabase utilise confirm-type token.
+        // redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
 
-      // data est le token ; on l’affiche pour test local
-      showToast('Lien de réinitialisation généré. (Token généré côté DB)');
-
-      // Option : vider le champ.
+      showToast(
+        'Email envoyé si votre compte existe. Vérifiez votre boîte mail pour réinitialiser le mot de passe.'
+      );
       setResetEmailOrPhone('');
+      setMode('login');
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la demande de reset');
+      setError(err?.message || 'Erreur lors de la demande de reset');
     } finally {
       setResetLoading(false);
     }
@@ -95,6 +98,12 @@ export default function AuthPage() {
       setError('Le mot de passe doit avoir au moins 6 caractères');
       return;
     }
+    // Majuscule, chiffre et caractère spécial obligatoires
+    if (!/[A-Z]/.test(regPassword) || !/\d/.test(regPassword) || !/[^A-Za-z0-9]/.test(regPassword)) {
+      setError('Le mot de passe doit contenir au moins 1 majuscule, 1 chiffre et 1 caractère spécial');
+      return;
+    }
+
     
     setLoading(true);
     try {
@@ -102,11 +111,12 @@ export default function AuthPage() {
       if (user) {
         showToast(`Compte créé avec succès ! Bienvenue ${user.name}`);
       } else {
-        setError('Cet email est déjà utilisé');
+        setError('Erreur lors de l\'inscription (réponse vide)');
       }
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'inscription');
     } finally {
+
       setLoading(false);
     }
   };

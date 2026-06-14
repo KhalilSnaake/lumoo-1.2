@@ -66,13 +66,22 @@ On **conserve la forme du type `User`** (id, name, email, phone, role, avatar, b
 - **Nouvelle page/route de réinitialisation** — gère le lien reçu par email et permet de saisir le nouveau mot de passe (`supabase.auth.updateUser`).
 - **~9 fichiers** utilisant `user.id` (désormais UUID) et `user.role` (depuis `profiles`) — adaptés (`AdminPanel`, `UserDashboard`, `Header`, `NotificationContext`, `UserManagement`, `api.ts`, `App.tsx`…).
 
-## 6. Création de comptes livreurs (option simple validée)
+## 6. Gestion des utilisateurs par l'admin (option simple validée)
 
-L'admin ne peut plus créer un compte + mot de passe directement (Supabase Auth l'interdit avec la clé `anon`). Flux retenu :
-1. Le livreur **s'inscrit** lui-même (compte `client` par défaut).
-2. L'admin le **passe en « livreur »** depuis le panneau admin (modification de `profiles.role`).
+Avec Supabase Auth, **créer/supprimer un compte et réinitialiser le mot de passe d'un autre** nécessitent la clé `service_role` (donc une Edge Function). L'**option simple** (validée) s'en passe et accepte ces changements de capacités :
 
-*(Version avancée hors-périmètre : Edge Function avec `service_role` pour créer des comptes depuis l'admin — à ajouter plus tard si besoin.)*
+| Action admin | Option simple | Remplacée par |
+|--------------|---------------|---------------|
+| Créer un compte (livreur) | ❌ retirée | Le livreur **s'inscrit**, l'admin le **passe en « livreur »** |
+| Supprimer un compte | ❌ retirée | **Bloquer** le compte (`blocked = true`) |
+| Réinitialiser le mot de passe d'un autre | ❌ retirée | L'utilisateur fait **« mot de passe oublié »** (email) |
+| Lister, changer le rôle, bloquer/débloquer, modifier nom/téléphone | ✅ conservé | — (via la table `profiles`) |
+
+Conséquences UI :
+- `UserManagement.tsx` : email en **lecture seule** dans l'édition ; bouton « Supprimer » remplacé par **« Bloquer / Débloquer »**.
+- `AdminPanel.tsx` : les formulaires de **création** d'utilisateur/livreur (avec mot de passe) sont retirés et remplacés par un message expliquant l'auto-inscription + promotion.
+
+*(Version avancée hors-périmètre : Edge Function `service_role` pour restaurer création/suppression/reset depuis l'admin — à ajouter plus tard si besoin.)*
 
 ## 7. Emails
 

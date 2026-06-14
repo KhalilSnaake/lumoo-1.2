@@ -16,6 +16,7 @@ let client: SupabaseClient | null = null;
 let authRedirectUrl: string | undefined;
 
 export function initCore(config: CoreConfig): SupabaseClient {
+  if (client) return client;
   client = createClient(config.supabaseUrl, config.supabaseAnonKey, {
     auth: {
       ...(config.storage ? { storage: config.storage } : {}),

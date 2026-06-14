@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { Ad, AdContextType } from '../types';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabaseClient';
 
 const AdContext = createContext<AdContextType | undefined>(undefined);
 
@@ -9,6 +9,7 @@ export function AdProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   const fetchAds = useCallback(async () => {
+    const supabase = getSupabase();
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -27,6 +28,7 @@ export function AdProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchAds(); }, [fetchAds]);
 
   const addAd = async (adData: Omit<Ad, 'id' | 'created_at'>) => {
+    const supabase = getSupabase();
     try {
       const { data, error } = await supabase
         .from('ads')
@@ -47,6 +49,7 @@ export function AdProvider({ children }: { children: ReactNode }) {
   };
 
   const updateAd = async (id: string, updates: Partial<Ad>) => {
+    const supabase = getSupabase();
     try {
       // On ne garde que les champs autorisés pour éviter les erreurs de colonnes inconnues
       const cleanUpdates: any = {};
@@ -80,6 +83,7 @@ export function AdProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteAd = async (id: string) => {
+    const supabase = getSupabase();
     try {
       const { error } = await supabase.from('ads').delete().eq('id', id);
       if (error) throw error;
@@ -92,6 +96,7 @@ export function AdProvider({ children }: { children: ReactNode }) {
   };
 
   const seedAds = async () => {
+    const supabase = getSupabase();
     try {
       const sample = [
         { title: 'Promo Riz Premium', image_url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=1200&h=400&fit=crop', position: 'top', active: true },

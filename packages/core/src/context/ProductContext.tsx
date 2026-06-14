@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { Product, ProductContextType } from '../types';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabaseClient';
 import { products as initialProducts } from '../data/products';
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -61,6 +61,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   const fetchProducts = useCallback(async () => {
+    const supabase = getSupabase();
     setLoading(true);
     try {
       // 1. Récupérer les produits (sans jointure)
@@ -113,6 +114,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   const addProduct = async (p: Omit<Product, 'id' | 'createdAt'>) => {
+    const supabase = getSupabase();
     // Résoudre le category_id depuis toutes les sources possibles
     const categoryId =
       p.category_id ??
@@ -152,6 +154,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
 
 
   const updateProduct = async (id: number, updates: Partial<Product>) => {
+    const supabase = getSupabase();
     const dbUpdates: any = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
@@ -213,12 +216,14 @@ export function ProductProvider({ children }: { children: ReactNode }) {
 
 
   const deleteProduct = async (id: number) => {
+    const supabase = getSupabase();
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (!error) setProducts(prev => prev.filter(p => p.id !== id));
     return !error;
   };
 
   const seedProducts = async () => {
+    const supabase = getSupabase();
     setLoading(true);
 
     // seed: map initialProducts.category (alimentaire|legumes) vers categories

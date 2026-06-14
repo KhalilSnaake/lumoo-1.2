@@ -1,17 +1,16 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { Notification, NotificationContextType } from '../types/notifications';
 import { useAuth } from './AuthContext';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabaseClient';
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-// Synthesized notification sound using Web Audio API
+// Synthesized notification sound using Web Audio API (no-op on platforms without AudioContext)
 const playNotificationSound = () => {
   try {
-    // Guard against non-browser environments
-    if (typeof window === 'undefined') return;
-
-    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    // Guard against non-browser environments (RN, SSR) that lack AudioContext
+    const AudioCtx: typeof AudioContext | undefined =
+      typeof AudioContext !== 'undefined' ? AudioContext : undefined;
     if (!AudioCtx) return;
 
     const audioContext = new AudioCtx();
@@ -40,6 +39,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   const fetchNotifications = useCallback(async () => {
+    const supabase = getSupabase();
     if (!user) return;
     const { data, error } = await supabase
       .from('notifications')
@@ -58,6 +58,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    const supabase = getSupabase();
     fetchNotifications();
     // Subscribe to new notifications
     if (user) {
@@ -95,17 +96,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [user, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
+    const supabase = getSupabase();
     await supabase.from('notifications').update({ read: true }).eq('id', id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
   const markAllAsRead = async () => {
+    const supabase = getSupabase();
     if (!user) return;
     await supabase.from('notifications').update({ read: true }).eq('user_id', user.id);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const createNotification = async (data: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
+    const supabase = getSupabase();
     const { data: newNotif, error } = await supabase
       .from('notifications')
       .insert({
@@ -130,6 +134,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteNotification = async (id: string) => {
+    const supabase = getSupabase();
     const { error } = await supabase.from('notifications').delete().eq('id', id);
     if (!error) {
       setNotifications(prev => prev.filter(n => n.id !== id));

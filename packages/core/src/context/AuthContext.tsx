@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { User, RegisterInput, AuthContextType } from '../types/auth';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabaseClient';
 import {
   apiLogin, apiRegister, apiCreateUser, apiLogout, apiGetCurrentUser,
   apiGetAllUsers, apiUpdateUser, apiDeleteUser, apiUpdateOwnPassword,
@@ -16,6 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
+    const supabase = getSupabase();
     apiGetCurrentUser().then(u => {
       setUser(u);
       setInitialized(true);

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSupabase } from '../lib/supabaseClient';
 
 export interface Category {
   id: number;
@@ -44,6 +44,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   const fetchCategories = useCallback(async () => {
+    const supabase = getSupabase();
     setLoading(true);
     const { data, error } = await supabase
       .from('categories')
@@ -59,6 +60,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   }, [fetchCategories]);
 
   const addCategory = async (input: { name: string }) => {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('categories')
       .insert({
@@ -75,6 +77,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   };
 
   const updateCategory = async (id: number, updates: { name?: string }) => {
+    const supabase = getSupabase();
     const slug = updates.name !== undefined ? slugify(updates.name) : undefined;
 
     const { data, error } = await supabase
@@ -93,6 +96,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteCategory = async (id: number) => {
+    const supabase = getSupabase();
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (!error) setCategories((prev) => prev.filter((c) => c.id !== id));
     return !error;

@@ -3,6 +3,10 @@
 -- ----------------------------------------------------------------------------
 -- À exécuter dans Supabase → SQL Editor.
 --
+-- ⚠️ NOTE SUPABASE : l'extension pgcrypto est installée dans le schéma
+--    "extensions" (pas "public"). On préfixe donc crypt/gen_salt par
+--    "extensions." sinon Postgres renvoie : function crypt(text, text) does not exist.
+--
 -- Objectif :
 --   1) Hasher les mots de passe (fini le stockage en clair)
 --   2) Vérifier le mot de passe CÔTÉ SERVEUR (fonction login_user) pour que la
@@ -23,8 +27,8 @@
 -- PARTIE 1 — SANS RISQUE — À LANCER MAINTENANT (répare la connexion)
 -- ============================================================================
 
--- 1.1 Extension de hashage (bcrypt)
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- 1.1 Extension de hashage (bcrypt), dans le schéma "extensions" (standard Supabase)
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- 1.2 Supprimer les policies RLS récursives (cause de "Erreur de connexion")
 --     et revenir à l'état fonctionnel. Le verrouillage propre se fait en 2.3.
@@ -63,7 +67,7 @@ AS $$
   WHERE (u.email = lower(trim(identifier)) OR u.phone = trim(identifier))
     AND (
       -- mot de passe déjà hashé (bcrypt commence par "$2")
-      (u.password LIKE '$2%' AND u.password = crypt(pass, u.password))
+      (u.password LIKE '$2%' AND u.password = extensions.crypt(pass, u.password))
       -- mot de passe encore en clair (avant la PARTIE 2)
       OR (u.password NOT LIKE '$2%' AND u.password = pass)
     )
@@ -81,7 +85,7 @@ GRANT EXECUTE ON FUNCTION public.login_user(text, text) TO anon, authenticated;
 
 -- 2.1 Hasher tous les mots de passe encore en clair (idempotent : ignore les déjà hashés)
 UPDATE users
-SET password = crypt(password, gen_salt('bf'))
+SET password = extensions.crypt(password, extensions.gen_salt('bf'))
 WHERE password IS NOT NULL
   AND password NOT LIKE '$2%';
 
@@ -89,10 +93,11 @@ WHERE password IS NOT NULL
 CREATE OR REPLACE FUNCTION public.hash_user_password()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 BEGIN
   IF NEW.password IS NOT NULL AND NEW.password NOT LIKE '$2%' THEN
-    NEW.password := crypt(NEW.password, gen_salt('bf'));
+    NEW.password := extensions.crypt(NEW.password, extensions.gen_salt('bf'));
   END IF;
   RETURN NEW;
 END;
@@ -125,7 +130,7 @@ GRANT  SELECT (id, name, email, phone, role, avatar, blocked, created_at)
 --   SELECT u.id, u.name, u.email, u.phone, u.role, u.avatar, COALESCE(u.blocked,false), u.created_at
 --   FROM users u
 --   WHERE (u.email = lower(trim(identifier)) OR u.phone = trim(identifier))
---     AND u.password = crypt(pass, u.password)
+--     AND u.password = extensions.crypt(pass, u.password)
 --   LIMIT 1;
 -- $$;
 -- GRANT EXECUTE ON FUNCTION public.login_user(text, text) TO anon, authenticated;

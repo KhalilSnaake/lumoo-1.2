@@ -1237,49 +1237,31 @@ function ProduitsTab() {
 }
 
 function UtilisateursTab() {
-  const { users, createUser, updateUser, deleteUser } = useAuth();
+  const { users, updateUser } = useAuth();
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [selectedUserDetail, setSelectedUserDetail] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('client');
 
   const filtered = users.filter(u => u.role !== 'livreur').filter(u => {
     const q = search.toLowerCase();
     return !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
   });
 
-  const handleCreate = async () => {
-    if (!name || !email || !password) { showToast('Remplissez les champs', 'error'); return; }
-    const u = await createUser({ name, email, phone, password, role });
-    if (u) { showToast('Utilisateur créé ✅'); setShowCreate(false); setName(''); setEmail(''); setPhone(''); setPassword(''); }
-    else { showToast('Erreur (email utilisé?)', 'error'); }
-  };
-
   const handleUpdate = async () => {
     if (!editingUser) return;
-    const updates: any = { 
-      name: editingUser.name, 
-      email: editingUser.email.toLowerCase().trim(), 
-      phone: editingUser.phone.trim(), 
-      role: editingUser.role 
+    const updates: any = {
+      name: editingUser.name,
+      phone: editingUser.phone.trim(),
+      role: editingUser.role
     };
-    if (newPassword) updates.password = newPassword;
-    
     try {
       const result = await updateUser(editingUser.id, updates);
-      if (result) { 
-        showToast('Utilisateur mis à jour ✅'); 
-        setEditingUser(null); 
-        setNewPassword(''); 
-        setSelectedUserDetail(result); 
+      if (result) {
+        showToast('Utilisateur mis à jour ✅');
+        setEditingUser(null);
+        setSelectedUserDetail(result);
       } else {
         showToast('Erreur lors de la mise à jour', 'error');
       }
@@ -1304,7 +1286,6 @@ function UtilisateursTab() {
              <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                <button onClick={() => setEditingUser({ ...u })} className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[9px] font-bold rounded-lg transition-all">✏️ Modifier</button>
                <button onClick={() => updateUser(u.id, { blocked: !u.blocked })} className={`px-3 py-1.5 rounded-lg text-[9px] font-bold ${u.blocked ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{u.blocked ? 'Débloquer' : 'Bloquer'}</button>
-               {u.role !== 'admin' && <button onClick={async (e) => { e.stopPropagation(); if(confirm('Supprimer cet utilisateur ?')) deleteUser(u.id); }} className="px-3 py-1.5 bg-red-50 text-red-500 text-[9px] font-bold rounded-lg">🗑</button>}
              </div>
           </div>
         ))}
@@ -1335,12 +1316,11 @@ function UtilisateursTab() {
         <Modal title="✏️ Modifier l'utilisateur" onClose={() => setEditingUser(null)}>
            <div className="space-y-3">
               <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nom complet</label><input type="text" value={editingUser.name} onChange={e => setEditingUser({...editingUser, name: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" /></div>
-              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Email</label><input type="email" value={editingUser.email} onChange={e => setEditingUser({...editingUser, email: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" /></div>
+              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Email (non modifiable)</label><input type="email" value={editingUser.email} disabled className="w-full px-4 py-3 bg-gray-100 border rounded-xl outline-none text-sm text-gray-500" /></div>
               <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Téléphone</label><MaliPhoneInput value={editingUser.phone} onChange={(val) => setEditingUser({...editingUser, phone: val})} /></div>
               <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Rôle</label>
                 <select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})} className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm"><option value="client">Client</option><option value="admin">admin</option><option value="livreur">Livreur</option></select>
               </div>
-              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nouveau mot de passe</label><input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Laisser vide pour ne pas changer" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" /></div>
               <button onClick={handleUpdate} className="w-full py-3 mt-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg">Sauvegarder les modifications</button>
            </div>
         </Modal>
@@ -1348,13 +1328,10 @@ function UtilisateursTab() {
 
       {showCreate && (
         <Modal title="👤 Nouveau compte" onClose={() => setShowCreate(false)}>
-           <div className="space-y-3">
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nom complet" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" />
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" />
-              <MaliPhoneInput value={phone} onChange={setPhone} />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mot de passe" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" />
-              <select value={role} onChange={e => setRole(e.target.value as UserRole)} className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm"><option value="client">Client</option><option value="admin">admin</option></select>
-              <button onClick={handleCreate} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg">Créer</button>
+           <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-800 leading-relaxed">
+             ℹ️ La création de compte se fait désormais par <b>auto-inscription</b> : demandez à la personne
+             de créer son compte depuis la page « Créer un compte », puis attribuez-lui le rôle souhaité
+             (ex. « livreur ») via le bouton <b>Modifier</b>.
            </div>
         </Modal>
       )}
@@ -1363,42 +1340,26 @@ function UtilisateursTab() {
 }
 
 function LivreursTab() {
-  const { users, createUser, updateUser, deleteUser } = useAuth();
+  const { users, updateUser } = useAuth();
   const { orders } = useOrders();
   const { showToast } = useToast();
   const [showAdd, setShowAdd] = useState(false);
   const [selectedLivreur, setSelectedLivreur] = useState<User | null>(null);
   const [editingLivreur, setEditingLivreur] = useState<User | null>(null);
-  const [newPass, setNewPass] = useState('');
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
 
   const livreurs = users.filter(u => u.role === 'livreur');
 
-  const handleCreate = async () => {
-    if (!name || !email || !password) return;
-    const u = await createUser({ name, email, phone, password, role: 'livreur' });
-    if (u) { showToast('Livreur ajouté ✅'); setShowAdd(false); setName(''); setEmail(''); setPhone(''); setPassword(''); }
-  };
-
   const handleUpdate = async () => {
     if (!editingLivreur) return;
-    const updates: any = { 
-      name: editingLivreur.name, 
-      email: editingLivreur.email.toLowerCase().trim(), 
-      phone: editingLivreur.phone.trim() 
+    const updates: any = {
+      name: editingLivreur.name,
+      phone: editingLivreur.phone.trim()
     };
-    if (newPass) updates.password = newPass;
-    
     try {
       const result = await updateUser(editingLivreur.id, updates);
-      if (result) { 
-        showToast('Livreur mis à jour ✅'); 
-        setEditingLivreur(null); 
-        setNewPass(''); 
+      if (result) {
+        showToast('Livreur mis à jour ✅');
+        setEditingLivreur(null);
       } else {
         showToast('Erreur lors de la mise à jour', 'error');
       }
@@ -1422,7 +1383,6 @@ function LivreursTab() {
                <div className="flex gap-2 mt-4" onClick={e => e.stopPropagation()}>
                  <button onClick={() => updateUser(l.id, { blocked: !l.blocked })} className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold ${l.blocked ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{l.blocked ? 'Activer' : 'Bloquer'}</button>
                  <button onClick={() => setEditingLivreur(l)} className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-lg transition-all hover:bg-blue-100">✏️</button>
-                 <button onClick={async (e) => { e.stopPropagation(); if(confirm('Supprimer ce livreur ?')) deleteUser(l.id); }} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-lg">🗑</button>
                </div>
             </div>
           );
@@ -1433,9 +1393,8 @@ function LivreursTab() {
         <Modal title="✏️ Modifier le livreur" onClose={() => setEditingLivreur(null)}>
            <div className="space-y-3">
               <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nom complet</label><input type="text" value={editingLivreur.name} onChange={e => setEditingLivreur({...editingLivreur, name: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" /></div>
-              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Email</label><input type="email" value={editingLivreur.email} onChange={e => setEditingLivreur({...editingLivreur, email: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" /></div>
+              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Email (non modifiable)</label><input type="email" value={editingLivreur.email} disabled className="w-full px-4 py-3 bg-gray-100 border rounded-xl outline-none text-sm text-gray-500" /></div>
               <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Téléphone</label><MaliPhoneInput value={editingLivreur.phone} onChange={(val) => setEditingLivreur({...editingLivreur, phone: val})} /></div>
-              <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nouveau mot de passe</label><input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="Laisser vide pour ne pas changer" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" /></div>
               <button onClick={handleUpdate} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg mt-4 transition-all active:scale-[0.98]">Sauvegarder</button>
            </div>
         </Modal>
@@ -1444,12 +1403,9 @@ function LivreursTab() {
       {selectedLivreur && <LivreurOrdersModal livreur={selectedLivreur} onClose={() => setSelectedLivreur(null)} />}
       {showAdd && (
         <Modal title="🛵 Nouveau livreur" onClose={() => setShowAdd(false)}>
-           <div className="space-y-3">
-              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nom complet" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" />
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" />
-              <MaliPhoneInput value={phone} onChange={setPhone} />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mot de passe" className="w-full px-4 py-3 bg-gray-50 border rounded-xl outline-none text-sm" />
-              <button onClick={handleCreate} className="w-full py-3 bg-orange-600 text-white rounded-xl font-bold shadow-lg transition-all active:scale-[0.98]">Ajouter</button>
+           <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-800 leading-relaxed">
+             ℹ️ Demandez au livreur de créer son compte via « Créer un compte », puis passez son rôle
+             à <b>« livreur »</b> dans l'onglet <b>Utilisateurs → Modifier</b>.
            </div>
         </Modal>
       )}

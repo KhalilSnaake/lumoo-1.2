@@ -48,9 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {
-    const u = await apiRegister(input);
-    if (u) { setUser(u); setShowAuth(false); }
-    return u;
+    const result = await apiRegister(input);
+    if (result.status === 'logged_in') { setUser(result.user); setShowAuth(false); }
+    return result;
   }, []);
 
   const createUser = useCallback(async (input: RegisterInput) => {

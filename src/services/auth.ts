@@ -1,4 +1,4 @@
-import { User, RegisterInput } from '../types/auth';
+import { User, RegisterInput, RegisterResult } from '../types/auth';
 import { supabase } from '../lib/supabase';
 
 const PROFILE_COLUMNS = 'id, name, email, phone, role, avatar, blocked, created_at';
@@ -40,7 +40,7 @@ export async function apiLogin(email: string, password: string): Promise<User | 
   return toUser(data.user.id, data.user.email, profile);
 }
 
-export async function apiRegister(input: RegisterInput): Promise<User | null> {
+export async function apiRegister(input: RegisterInput): Promise<RegisterResult> {
   const email = input.email.trim().toLowerCase();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -48,9 +48,11 @@ export async function apiRegister(input: RegisterInput): Promise<User | null> {
     options: { data: { name: input.name, phone: input.phone.trim() } },
   });
   if (error) throw new Error(error.message || 'Erreur lors de la création du compte');
-  if (!data.user) return null;
+  // Si la confirmation par email est activée, signUp ne renvoie pas de session :
+  // l'utilisateur doit d'abord cliquer le lien reçu par email avant de se connecter.
+  if (!data.session || !data.user) return { status: 'confirm_email' };
   const profile = await fetchProfile(data.user.id);
-  return toUser(data.user.id, data.user.email, profile);
+  return { status: 'logged_in', user: toUser(data.user.id, data.user.email, profile) };
 }
 
 // Option simple : la création de compte par l'admin n'est plus possible (clé service requise).

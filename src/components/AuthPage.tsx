@@ -96,11 +96,12 @@ export default function AuthPage() {
     
     setLoading(true);
     try {
-      const user = await register({ name: regName, email: regEmail, phone: regPhone, password: regPassword, role: regRole });
-      if (user) {
-        showToast(`Compte créé avec succès ! Bienvenue ${user.name}`);
+      const result = await register({ name: regName, email: regEmail, phone: regPhone, password: regPassword, role: regRole });
+      if (result.status === 'confirm_email') {
+        showToast('Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.');
+        setMode('login');
       } else {
-        setError('Erreur lors de l\'inscription (réponse vide)');
+        showToast(`Compte créé avec succès ! Bienvenue ${result.user.name}`);
       }
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'inscription');

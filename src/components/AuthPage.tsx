@@ -57,34 +57,28 @@ export default function AuthPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const identifier = resetEmailOrPhone.trim();
-    if (!identifier) return;
+    const email = resetEmailOrPhone.trim();
+    if (!email) return;
 
     setResetLoading(true);
     setError('');
 
     try {
-      // Cette app n'utilise pas Supabase Auth : pas de reset automatique par email.
-      // On enregistre la demande dans la boîte de réception admin (contact_messages),
-      // un administrateur réinitialise ensuite le mot de passe depuis le panneau Admin.
-      const isEmail = identifier.includes('@');
-      const { error } = await supabase.from('contact_messages').insert({
-        name: 'Demande de réinitialisation',
-        email: isEmail ? identifier.toLowerCase() : 'non-fourni@lumoo.ml',
-        phone: isEmail ? null : identifier,
-        subject: 'Réinitialisation de mot de passe',
-        message: `Un utilisateur demande la réinitialisation de son mot de passe. Identifiant fourni : ${identifier}. Merci de le recontacter et de réinitialiser le mot de passe depuis le panneau Admin.`,
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        // Vous pouvez ajuster l'URL vers votre page de changement de mot de passe.
+        // Par défaut Supabase utilise confirm-type token.
+        // redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
 
       showToast(
-        'Votre demande a bien été envoyée. Un administrateur vous recontactera pour réinitialiser votre mot de passe.'
+        'Email envoyé si votre compte existe. Vérifiez votre boîte mail pour réinitialiser le mot de passe.'
       );
       setResetEmailOrPhone('');
       setMode('login');
     } catch (err: any) {
-      setError(err?.message || 'Erreur lors de l\'envoi de la demande');
+      setError(err?.message || 'Erreur lors de la demande de reset');
     } finally {
       setResetLoading(false);
     }

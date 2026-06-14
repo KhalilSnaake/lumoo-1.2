@@ -25,10 +25,13 @@ Trois couplages au web bloquent aujourd'hui ce partage :
 |----------|-------|
 | Structure du code | **Monorepo + package `core` partagé** (npm workspaces) |
 | Migration vers Supabase Auth | **Reportée** — on garde l'auth maison actuelle, mais on la rend compatible mobile (terrain prêt pour la migration ultérieure) |
+| Abstraction d'auth | **Interface (port) `AuthProvider` dans le core** : impl. actuelle = auth maison ; Supabase Auth = future impl. droppable sans toucher aux écrans |
 | Ampleur | **Fondation + premiers écrans mobiles**, découpée en lots ; **Lot 1** ici |
 | Périmètre des écrans | Répliquer l'app web à terme ; **Lot 1 = écrans publics sans auth** |
 | Partage de code | **Partager la logique, UI séparée** : core partagé ; web en Tailwind, mobile en NativeWind |
 | Mobile | **Expo** (managed) + **Expo Router** + **NativeWind** |
+| Layout web | **Déplacé dans `apps/web/`** (layout symétrique) |
+| Déploiement Vercel | **`vercel.json` à la racine** ciblant `apps/web` (aucun réglage à changer dans le dashboard) |
 | Admin | **Web-only** (pas porté sur mobile) |
 
 ## 3. Découpage en lots
@@ -114,6 +117,25 @@ export interface AsyncStorageLike {
 - **context/** (React pur, fonctionne web + mobile) : `ProductContext`, `CategoryContext`, `CartContext`, `SearchContext`, `AdContext`, `AuthContext`, et les autres contexts de données. Les deux apps les importent depuis `@lumoo/core`.
 - **Restent côté app** : tout ce qui rend de l'UI (ex. la partie *rendu* de `ToastContext` — l'état peut vivre dans le core, l'affichage reste par plateforme), les composants, les assets, `utils/images`.
 
+### 5.4 Abstraction d'auth (port) — préparer Supabase Auth
+
+On sait qu'on basculera **bientôt** sur Supabase Auth. Pour que ce soit un simple remplacement (et non une réécriture des écrans), le core expose une **interface `AuthProvider` (port)** que `AuthContext` consomme, sans savoir quelle implémentation est derrière :
+
+```ts
+// packages/core/src/services/auth/AuthProvider.ts (forme indicative)
+export interface AuthProvider {
+  getCurrentUser(): Promise<User | null>;
+  login(identifier: string, password: string): Promise<User | null>;
+  register(input: RegisterInput): Promise<User | null>;
+  logout(): Promise<void>;
+  // étendu au Lot 2 / migration : resetPassword, onAuthStateChange…
+}
+```
+
+- **Implémentation actuelle (ce lot)** : `LegacyAuthProvider` = l'auth maison existante (`login_user` RPC + table `users`), mais branchée sur la factory Supabase + l'interface `Storage` async (donc déjà compatible mobile).
+- **Implémentation future (migration)** : `SupabaseAuthProvider` = `supabase.auth.*`. La bascule consistera à changer **l'implémentation injectée**, pas les écrans ni `AuthContext`.
+- `AuthContext` reçoit l'implémentation via `initCore(config)` (ou un défaut). Les écrans ne dépendent que du contexte, jamais de l'implémentation.
+
 ## 6. App web — impact
 
 - **Déplacée** dans `apps/web/` ; le code des composants, `App.tsx` et Tailwind **ne changent quasiment pas**.
@@ -138,7 +160,15 @@ export interface AsyncStorageLike {
 
 - **npm workspaces** (déjà sur npm — pas de nouvel outil ; Turborepo possible plus tard).
 - `tsconfig.base.json` partagé + alias de chemin `@lumoo/core`.
-- **Vercel** : régler la racine du projet web sur `apps/web` (documenté dans le plan).
+- **Vercel** (l'utilisateur n'a pas accès au dashboard ; `main` se déploie automatiquement) : on **n'ajuste aucun réglage du dashboard**. À la place, on committe un **`vercel.json` à la racine** qui redirige le build vers `apps/web` :
+  ```json
+  {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build --workspace apps/web",
+    "outputDirectory": "apps/web/dist"
+  }
+  ```
+  Ainsi le déploiement auto de `main` continue de fonctionner après le merge, sans intervention sur Vercel. *(Cas résiduel : si une « Root Directory » non-standard est déjà configurée dans le dashboard, le propriétaire du repo devra la remettre à la racine.)*
 - **Variables d'environnement** :
   - Web : `apps/web/.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
   - Mobile : `apps/mobile/app.config.ts` + `.env` (via `expo-constants`).
@@ -153,6 +183,7 @@ export interface AsyncStorageLike {
 | Contexts couplés au web | On ne déplace que les contexts **agnostiques** ; l'UI (Toast…) reste par plateforme |
 | Imports web cachés dans le core (ex. `window`, assets) | Revue à l'extraction ; le core ne doit dépendre d'aucune API DOM |
 | Divergence des versions React web (19) / RN | Aligner React/React-DOM/React-Native compatibles ; le core ne fixe pas React (peerDependency) |
+| Déploiement Vercel cassé au merge sur `main` (web déplacé, pas d'accès dashboard) | `vercel.json` racine (install/build/output ciblant `apps/web`) committé ; à valider sur un déploiement *preview* de la PR avant merge |
 
 ## 10. Hors périmètre (YAGNI pour ce lot)
 
@@ -170,3 +201,5 @@ export interface AsyncStorageLike {
 4. Sur mobile : parcours **Accueil → Catalogue → Fiche produit → ajouter au panier → voir le panier**.
 5. **Zéro duplication** de la logique d'accès aux données entre web et mobile.
 6. Le client Supabase et la session sont **indépendants de la plateforme** (terrain prêt pour la migration Supabase Auth et pour le Lot 2).
+7. L'auth passe par l'interface `AuthProvider` : remplacer l'implémentation maison par Supabase Auth plus tard ne touchera **ni les écrans ni `AuthContext`**.
+8. Le **déploiement Vercel preview** de la PR réussit grâce au `vercel.json` racine (validation avant merge sur `main`).

@@ -5,7 +5,6 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  password: string;
   role: UserRole;
   createdAt: string;
   avatar: string;
@@ -19,7 +18,7 @@ export interface AuthContextType {
   register: (data: RegisterInput) => Promise<User | null>;
   createUser: (data: RegisterInput) => Promise<User | null>;
   logout: () => void;
-  updateUser: (id: string, updates: Partial<User>) => Promise<User | null>;
+  updateUser: (id: string, updates: Partial<User> & { newPassword?: string }) => Promise<User | null>;
   deleteUser: (id: string) => Promise<boolean>;
   isLoggedIn: boolean;
   isAdmin: boolean;

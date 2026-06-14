@@ -2,18 +2,16 @@ import { useState } from 'react';
 import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import { Order, OrderStatus, PaymentMethod } from '../types';
-import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
+import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 
 const paymentLogos: Record<PaymentMethod, React.ReactNode> = {
   orange_money: <OrangeMoneyLogo className="w-6 h-6 shadow-sm border border-gray-100" />,
-  moov_money: <MoovMoneyLogo className="w-6 h-6 shadow-sm border border-gray-100" />,
   wave: <WaveLogo className="w-6 h-6 shadow-sm border border-gray-100" />,
   livraison: <CashLogo className="w-6 h-6 shadow-sm border border-gray-100" />,
 };
 
 const paymentNames: Record<PaymentMethod, string> = {
   orange_money: 'Orange Money',
-  moov_money: 'Moov Money',
   wave: 'Wave',
   livraison: 'Paiement à la livraison',
 };

@@ -13,6 +13,13 @@ function generateId(): string {
   return 'USR-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 5).toUpperCase();
 }
 
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 function getSession(): User | null {
   try {
     const data = localStorage.getItem(SESSION_KEY);
@@ -34,7 +41,6 @@ function rowToUser(row: any): User {
     name: row.name,
     email: row.email,
     phone: row.phone,
-    password: row.password,
     role: row.role,
     createdAt: row.created_at,
     avatar: row.avatar,
@@ -47,12 +53,14 @@ export async function apiLogin(identifier: string, password: string): Promise<Us
   const lowerId = cleanId.toLowerCase();
   
   try {
+    const hashedPassword = await sha256(password);
+    
     // 1. Try to find user by email first
     const { data: byEmail, error: errorEmail } = await supabase
       .from('users')
       .select('*')
       .eq('email', lowerId)
-      .eq('password', password)
+      .eq('password', hashedPassword)
       .maybeSingle();
 
     if (errorEmail) throw new Error('Erreur de connexion (Email)');
@@ -69,7 +77,7 @@ export async function apiLogin(identifier: string, password: string): Promise<Us
       .from('users')
       .select('*')
       .eq('phone', cleanId)
-      .eq('password', password)
+      .eq('password', hashedPassword)
       .maybeSingle();
 
     if (errorPhone) throw new Error('Erreur de connexion (Phone)');
@@ -87,7 +95,7 @@ export async function apiLogin(identifier: string, password: string): Promise<Us
         .from('users')
         .select('*')
         .eq('phone', strippedPhone)
-        .eq('password', password)
+        .eq('password', hashedPassword)
         .maybeSingle();
         
       if (byStrippedPhone) {
@@ -108,13 +116,14 @@ export async function apiLogin(identifier: string, password: string): Promise<Us
 export async function apiRegister(input: RegisterInput): Promise<User | null> {
   const normalizedEmail = input.email.toLowerCase().trim();
   const normalizedPhone = input.phone.trim();
+  const hashedPassword = await sha256(input.password);
   
-  const user: User = {
-    id: generateId(),
+  const id = generateId();
+  const newUser: User = {
+    id,
     name: input.name,
     email: normalizedEmail,
     phone: normalizedPhone,
-    password: input.password,
     role: input.role,
     createdAt: new Date().toISOString(),
     avatar: roleAvatars[input.role],
@@ -122,33 +131,34 @@ export async function apiRegister(input: RegisterInput): Promise<User | null> {
   };
 
   const { error } = await supabase.from('users').insert({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    password: user.password,
-    role: user.role,
-    avatar: user.avatar,
-    created_at: user.createdAt,
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    phone: newUser.phone,
+    password: hashedPassword,
+    role: newUser.role,
+    avatar: newUser.avatar,
+    created_at: newUser.createdAt,
     blocked: false
   });
 
   if (error) throw new Error(error.message || 'Erreur lors de la création du compte');
-  saveSession(user);
-  return user;
+  saveSession(newUser);
+  return newUser;
 
 }
 
 export async function apiCreateUser(input: RegisterInput): Promise<User | null> {
   const normalizedEmail = input.email.toLowerCase().trim();
   const normalizedPhone = input.phone.trim();
+  const hashedPassword = await sha256(input.password);
   
-  const user: User = {
-    id: generateId(),
+  const id = generateId();
+  const newUser: User = {
+    id,
     name: input.name,
     email: normalizedEmail,
     phone: normalizedPhone,
-    password: input.password,
     role: input.role,
     createdAt: new Date().toISOString(),
     avatar: roleAvatars[input.role],
@@ -156,14 +166,14 @@ export async function apiCreateUser(input: RegisterInput): Promise<User | null> 
   };
 
   const { error } = await supabase.from('users').insert({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    password: user.password,
-    role: user.role,
-    avatar: user.avatar,
-    created_at: user.createdAt,
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    phone: newUser.phone,
+    password: hashedPassword,
+    role: newUser.role,
+    avatar: newUser.avatar,
+    created_at: newUser.createdAt,
     blocked: false
   });
 
@@ -171,7 +181,7 @@ export async function apiCreateUser(input: RegisterInput): Promise<User | null> 
     console.error('Supabase error:', error);
     return null;
   }
-  return user;
+  return newUser;
 }
 
 export async function apiLogout(): Promise<void> {
@@ -195,12 +205,14 @@ export async function apiGetAllUsers(): Promise<User[]> {
   return data.map(rowToUser);
 }
 
-export async function apiUpdateUser(id: string, updates: Partial<User>): Promise<User | null> {
+export async function apiUpdateUser(id: string, updates: Partial<User> & { newPassword?: string }): Promise<User | null> {
   const updateData: any = {};
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.email !== undefined) updateData.email = updates.email.toLowerCase().trim();
   if (updates.phone !== undefined) updateData.phone = updates.phone;
-  if (updates.password !== undefined) updateData.password = updates.password;
+  if (updates.newPassword !== undefined) {
+    updateData.password = await sha256(updates.newPassword);
+  }
   if (updates.role !== undefined) updateData.role = updates.role;
   if (updates.avatar !== undefined) updateData.avatar = updates.avatar;
   if (updates.blocked !== undefined) updateData.blocked = updates.blocked;

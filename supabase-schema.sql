@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_phone TEXT NOT NULL,
   address TEXT NOT NULL,
   city TEXT NOT NULL,
-  payment_method TEXT NOT NULL CHECK (payment_method IN ('orange_money', 'moov_money', 'wave', 'livraison')),
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('orange_money', 'wave', 'livraison')),
   payment_phone TEXT DEFAULT '',
   total_price INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'en_attente' CHECK (status IN ('en_attente', 'confirmee', 'en_preparation', 'en_livraison', 'livree', 'annulee')),
@@ -150,7 +150,13 @@ CREATE POLICY "Public read contact_messages"
 ON contact_messages FOR SELECT
 USING (true);
 
--- 10. Insérer l'admin par défaut
+-- 10. Supprimer l'ancien admin et insérer/réinitialiser l'admin par défaut avec son mot de passe SHA-256 ('admin123' -> '240a1048a2909d0ea943b282650c74ea2781200612457b12903a8309a4734b85')
+DELETE FROM users WHERE id = 'USR-ADMIN-001' OR email = 'admin@lumoo.ml';
+
 INSERT INTO users (id, name, email, phone, password, role, avatar)
-VALUES ('USR-ADMIN-001', 'Admin Lumoo', 'admin@lumoo.ml', '+223 77 99 68 58', 'admin123', 'admin', '👨‍💼')
-ON CONFLICT (id) DO NOTHING;
+VALUES ('USR-ADMIN-001', 'Admin Lumoo', 'admin@lumoo.ml', '+223 77 99 68 58', '240a1048a2909d0ea943b282650c74ea2781200612457b12903a8309a4734b85', 'admin', '👨‍💼')
+ON CONFLICT (id) DO UPDATE 
+SET password = EXCLUDED.password, 
+    email = EXCLUDED.email, 
+    phone = EXCLUDED.phone, 
+    role = EXCLUDED.role;

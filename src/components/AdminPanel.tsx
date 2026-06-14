@@ -1271,7 +1271,7 @@ function UtilisateursTab() {
       phone: editingUser.phone.trim(), 
       role: editingUser.role 
     };
-    if (newPassword) updates.password = newPassword;
+    if (newPassword) updates.newPassword = newPassword;
     
     try {
       const result = await updateUser(editingUser.id, updates);
@@ -1391,7 +1391,7 @@ function LivreursTab() {
       email: editingLivreur.email.toLowerCase().trim(), 
       phone: editingLivreur.phone.trim() 
     };
-    if (newPass) updates.password = newPass;
+    if (newPass) updates.newPassword = newPass;
     
     try {
       const result = await updateUser(editingLivreur.id, updates);
@@ -1472,7 +1472,6 @@ function MessagesTab() {
 
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  const { showToast } = useToast();
 
   // Filtering and search state
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -1497,13 +1496,6 @@ function MessagesTab() {
     return true;
   });
 
-  // Toggle selection
-  const toggleSelection = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
-  };
 
   // Toggle all selection
   const toggleAllSelection = () => {

@@ -4,7 +4,7 @@ import { useOrders } from '../context/OrderContext';
 import { useToast } from '../context/ToastContext';
 import { OrderStatus } from '../types';
 import Logo from './Logo';
-import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
+import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import { supabase } from '../lib/supabase';
 import MaliPhoneInput from './MaliPhoneInput';
 
@@ -19,7 +19,6 @@ const statusLabels: Record<OrderStatus, { label: string; color: string; bg: stri
 
 const paymentLogos = {
   orange_money: <OrangeMoneyLogo className="w-4 h-4" />,
-  moov_money: <MoovMoneyLogo className="w-4 h-4" />,
   wave: <WaveLogo className="w-4 h-4" />,
   livraison: <CashLogo className="w-4 h-4" />,
 };
@@ -118,7 +117,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
         avatar: editAvatar
       };
       
-      if (editPassword) updates.password = editPassword;
+      if (editPassword) updates.newPassword = editPassword;
 
       const result = await updateUser(user.id, updates);
       if (result) {

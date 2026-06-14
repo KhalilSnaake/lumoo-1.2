@@ -3,7 +3,7 @@ import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import { PaymentMethod } from '../types';
 import { useState } from 'react';
-import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
+import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
 
@@ -155,7 +155,6 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
 
   const paymentMethods = [
     { id: 'orange_money', name: 'Orange Money', icon: <OrangeMoneyLogo /> },
-    { id: 'moov_money', name: 'Moov Money', icon: <MoovMoneyLogo /> },
     { id: 'wave', name: 'Wave', icon: <WaveLogo /> },
     { id: 'livraison', name: 'Paiement à la livraison', icon: <CashLogo /> },
   ];

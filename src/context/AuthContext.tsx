@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const updateUser = useCallback(async (id: string, updates: Partial<User>) => {
+  const updateUser = useCallback(async (id: string, updates: Partial<User> & { newPassword?: string }) => {
     const updated = await apiUpdateUser(id, updates);
     if (updated && user?.id === id) setUser(updated);
     refreshUsers();

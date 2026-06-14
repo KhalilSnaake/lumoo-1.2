@@ -8,12 +8,6 @@ export const OrangeMoneyLogo = ({ className = "w-8 h-8" }: { className?: string 
   </div>
 );
 
-export const MoovMoneyLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
-  <div className={`${className} bg-[#005CA9] rounded-lg flex flex-col items-center justify-center p-0.5 shadow-sm border border-blue-400`}>
-    <div className="text-[7px] font-black text-white italic -mb-1 tracking-tighter uppercase">Moov</div>
-    <div className="text-[9px] font-black text-[#FF7900] uppercase">Money</div>
-  </div>
-);
 
 export const WaveLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
   <div className={`${className} bg-[#1DC1F2] rounded-lg flex items-center justify-center overflow-hidden shadow-sm border border-blue-300`}>

@@ -27,7 +27,7 @@ export interface CartItem {
   quantity: number;
 }
 
-export type PaymentMethod = 'orange_money' | 'moov_money' | 'wave' | 'livraison';
+export type PaymentMethod = 'orange_money' | 'wave' | 'livraison';
 
 export type OrderStatus = 'en_attente' | 'confirmee' | 'en_preparation' | 'en_livraison' | 'livree' | 'annulee';
 

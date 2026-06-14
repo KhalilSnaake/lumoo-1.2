@@ -64,7 +64,7 @@ export default function AuthPage() {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         // Vous pouvez ajuster l'URL vers votre page de changement de mot de passe.
         // Par défaut Supabase utilise confirm-type token.
         // redirectTo: `${window.location.origin}/reset-password`,

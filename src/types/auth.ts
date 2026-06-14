@@ -27,6 +27,9 @@ export interface AuthContextType {
   isClient: boolean;
   showAuth: boolean;
   setShowAuth: (show: boolean) => void;
+  passwordRecovery: boolean;
+  clearPasswordRecovery: () => void;
+  updateOwnPassword: (newPassword: string) => Promise<void>;
 }
 
 export interface RegisterInput {

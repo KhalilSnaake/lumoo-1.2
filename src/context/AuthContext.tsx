@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { User, RegisterInput, AuthContextType } from '../types/auth';
-import { apiLogin, apiRegister, apiCreateUser, apiLogout, apiGetCurrentUser, apiGetAllUsers, apiUpdateUser, apiDeleteUser, seedDefaultAdmin } from '../services/auth';
+import { supabase } from '../lib/supabase';
+import {
+  apiLogin, apiRegister, apiCreateUser, apiLogout, apiGetCurrentUser,
+  apiGetAllUsers, apiUpdateUser, apiDeleteUser, apiUpdateOwnPassword,
+} from '../services/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -9,13 +13,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [showAuth, setShowAuth] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    seedDefaultAdmin();
     apiGetCurrentUser().then(u => {
-      if (u && u.blocked) { setUser(null); } else { setUser(u); }
+      setUser(u);
       setInitialized(true);
     });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true);
+      }
+      // Recharge l'utilisateur courant à chaque changement de session.
+      apiGetCurrentUser().then(setUser);
+    });
+
+    return () => { sub.subscription.unsubscribe(); };
   }, []);
 
   const refreshUsers = useCallback(async () => {
@@ -28,16 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.role, refreshUsers]);
 
   const login = useCallback(async (email: string, password: string) => {
-    try {
-      const u = await apiLogin(email, password);
-      if (u) {
-        setUser(u);
-        setShowAuth(false);
-      }
-      return u;
-    } catch (err: any) {
-      throw err;
-    }
+    const u = await apiLogin(email, password);
+    if (u) { setUser(u); setShowAuth(false); }
+    return u;
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {
@@ -70,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   }, [refreshUsers]);
 
+  const clearPasswordRecovery = useCallback(() => setPasswordRecovery(false), []);
+  const updateOwnPassword = useCallback(async (newPassword: string) => {
+    await apiUpdateOwnPassword(newPassword);
+  }, []);
+
   if (!initialized) return null;
 
   return (
@@ -80,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLivreur: user?.role === 'livreur',
       isClient: user?.role === 'client',
       showAuth, setShowAuth,
+      passwordRecovery, clearPasswordRecovery, updateOwnPassword,
     }}>
       {children}
     </AuthContext.Provider>

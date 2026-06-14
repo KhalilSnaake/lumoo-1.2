@@ -11,13 +11,11 @@ const roleLabels: Record<UserRole, { label: string; emoji: string; color: string
 };
 
 export default function UserManagement({ onClose }: { onClose: () => void }) {
-  const { users, updateUser, deleteUser } = useAuth();
+  const { users, updateUser } = useAuth();
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<UserRole | 'all'>('all');
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const filtered = users.filter(u => {
     const matchRole = filterRole === 'all' || u.role === filterRole;
@@ -37,20 +35,11 @@ export default function UserManagement({ onClose }: { onClose: () => void }) {
     if (!editingUser) return;
     await updateUser(editingUser.id, {
       name: editingUser.name,
-      email: editingUser.email,
       phone: editingUser.phone,
       role: editingUser.role,
     });
     setEditingUser(null);
     showToast('Utilisateur modifié avec succès');
-  };
-
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    await deleteUser(id);
-    setDeletingId(null);
-    setConfirmDelete(null);
-    showToast('Utilisateur supprimé', 'error');
   };
 
   return (
@@ -125,7 +114,7 @@ export default function UserManagement({ onClose }: { onClose: () => void }) {
                   <div className="flex gap-2">
                     <button onClick={() => setEditingUser({ ...u })} className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold rounded-lg transition-all">✏️ Modifier</button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => setConfirmDelete(u.id)} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold rounded-lg transition-all">🗑 Supprimer</button>
+                      <button onClick={() => updateUser(u.id, { blocked: !u.blocked })} className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${u.blocked ? 'bg-green-50 hover:bg-green-100 text-green-700' : 'bg-red-50 hover:bg-red-100 text-red-600'}`}>{u.blocked ? '✅ Débloquer' : '🚫 Bloquer'}</button>
                     )}
                   </div>
                 </div>
@@ -153,8 +142,8 @@ export default function UserManagement({ onClose }: { onClose: () => void }) {
                 <input type="text" value={editingUser.name} onChange={e => setEditingUser({ ...editingUser, name: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Email</label>
-                <input type="email" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Email (non modifiable)</label>
+                <input type="email" value={editingUser.email} disabled className="w-full px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Téléphone</label>
@@ -177,23 +166,7 @@ export default function UserManagement({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      {/* Delete Confirm */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmDelete(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center space-y-4 animate-slide-up">
-            <span className="text-5xl block">⚠️</span>
-            <h3 className="text-lg font-bold text-gray-800">Supprimer cet utilisateur ?</h3>
-            <p className="text-sm text-gray-500">Cette action est irréversible.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-all">Annuler</button>
-              <button onClick={() => handleDelete(confirmDelete)} disabled={deletingId === confirmDelete} className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50">
-                {deletingId === confirmDelete ? 'Suppression...' : '🗑 Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* (Suppression de compte remplacée par le blocage — option simple Supabase Auth) */}
     </div>
   );
 }

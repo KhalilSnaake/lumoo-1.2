@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useCart,
   useOrders,
@@ -45,6 +45,14 @@ export default function CartBuilder() {
   const [createdOrderId, setCreatedOrderId] = useState('');
   const [createdDeliveryCode, setCreatedDeliveryCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pré-remplir nom + téléphone depuis le profil quand l'utilisateur est connecté
+  useEffect(() => {
+    if (user) {
+      setName(prev => prev || user.name || '');
+      setPhone(prev => prev || user.phone || '');
+    }
+  }, [user]);
 
   const formatPrice = (p: number) => p.toLocaleString('fr-FR');
   const { products } = useProducts();

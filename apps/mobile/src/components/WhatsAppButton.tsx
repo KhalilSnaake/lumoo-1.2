@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { openCatalog } from "../lib/whatsapp";
@@ -18,21 +18,17 @@ export function WhatsAppButton() {
   const insets = useSafeAreaInsets();
   return (
     <View
-      style={{ position: "absolute", left: 16, bottom: insets.bottom + 16 }}
+      style={{ position: "absolute", left: 16, bottom: insets.bottom + 80 }}
       pointerEvents="box-none"
     >
       <Pressable
         onPress={openCatalog}
         accessibilityRole="button"
         accessibilityLabel="Boutique WhatsApp Business"
-        className="flex-row items-center gap-2 rounded-full bg-whatsapp pl-4 pr-5 py-3 active:opacity-90"
-        style={{ minHeight: 48, shadowColor: "#059669", shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
+        className="h-14 w-14 items-center justify-center rounded-full bg-whatsapp active:opacity-90"
+        style={{ shadowColor: "#059669", shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }}
       >
         <WhatsAppGlyph />
-        <View>
-          <Text className="font-display-semibold text-xs text-white">Notre Boutique</Text>
-          <Text className="font-body text-[10px] text-white/80">WhatsApp Business</Text>
-        </View>
       </Pressable>
     </View>
   );

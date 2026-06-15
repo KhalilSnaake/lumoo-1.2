@@ -1456,15 +1456,6 @@ function MessagesTab() {
     return true;
   });
 
-  // Toggle selection
-  const _toggleSelection = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
-  };
-  void _toggleSelection;
-
   // Toggle all selection
   const toggleAllSelection = () => {
     if (selectedIds.size === filteredMessages.length) {

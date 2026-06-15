@@ -1,16 +1,18 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Lumoo",
+    "slug": "lumoo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "lumoo",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "ml.lumoo.app",
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "ml.lumoo.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -28,10 +30,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#16a34a",
+          "image": "./assets/images/logo-lumoo.png",
+          "imageWidth": 200,
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "image": "./assets/images/logo-lumoo.png",
+            "imageWidth": 200
           }
         }
       ]

@@ -6,6 +6,7 @@
 import '@/global.css';
 
 import { Platform } from 'react-native';
+import { colors as brandColors } from "@/theme/tokens";
 
 export const Colors = {
   light: {
@@ -25,6 +26,12 @@ export const Colors = {
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+
+export const Brand = {
+  primary: brandColors.brand.DEFAULT,
+  primaryDark: brandColors.brand.dark,
+  whatsapp: brandColors.whatsapp,
+} as const;
 
 export const Fonts = Platform.select({
   ios: {

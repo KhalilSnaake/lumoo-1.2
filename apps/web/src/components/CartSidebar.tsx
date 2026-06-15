@@ -147,6 +147,7 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [createdOrderId, setCreatedOrderId] = useState('');
+  const [createdDeliveryCode, setCreatedDeliveryCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatPrice = (price: number) => price.toLocaleString('fr-FR');
@@ -178,6 +179,7 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
         paymentPhone,
       });
       setCreatedOrderId(order.id);
+      setCreatedDeliveryCode(order.deliveryCode);
       clearCart();
       setStep('success');
     } finally {
@@ -287,6 +289,11 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
             <div className="bg-green-50 rounded-xl p-3 border border-green-200 w-full max-w-xs">
               <p className="text-[10px] text-green-700 font-medium">N° de commande</p>
               <p className="text-sm font-extrabold font-mono text-green-800 tracking-wider">{createdOrderId}</p>
+            </div>
+            <div className="bg-emerald-600 text-white rounded-xl p-3 w-full max-w-xs">
+              <p className="text-[10px] font-medium opacity-80">🔒 Code de livraison</p>
+              <p className="text-2xl font-black font-mono tracking-[0.3em]">{createdDeliveryCode}</p>
+              <p className="text-[9px] opacity-80 mt-1">Gardez-le pour suivre votre commande.</p>
             </div>
             <button onClick={() => { setIsCartOpen(false); }} className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg transition-all text-sm">Continuer mes achats</button>
           </div>

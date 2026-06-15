@@ -112,6 +112,18 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
   };
 }
 
+// Suivi sécurisé d'une commande (invité) : la RLS verrouille `orders`,
+// on passe par la fonction SECURITY DEFINER `track_order(numéro, code)`.
+export async function apiTrackOrder(orderId: string, deliveryCode: string): Promise<any | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc('track_order', {
+    p_order_id: orderId.trim().toUpperCase(),
+    p_delivery_code: deliveryCode.trim(),
+  });
+  if (error || !data) return null;
+  return data;
+}
+
 export async function apiGetOrders(): Promise<Order[]> {
   const supabase = getSupabase();
   // Fetch orders

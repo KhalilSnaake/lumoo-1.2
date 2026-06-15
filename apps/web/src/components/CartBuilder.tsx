@@ -43,6 +43,7 @@ export default function CartBuilder() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [createdOrderId, setCreatedOrderId] = useState('');
+  const [createdDeliveryCode, setCreatedDeliveryCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatPrice = (p: number) => p.toLocaleString('fr-FR');
@@ -137,6 +138,7 @@ export default function CartBuilder() {
       }
 
       setCreatedOrderId(order.id);
+      setCreatedDeliveryCode(order.deliveryCode);
       clearCart();
       setStep('confirmation');
     } catch (err: any) {
@@ -391,7 +393,12 @@ export default function CartBuilder() {
                 <p className="text-xs text-green-700 font-bold uppercase tracking-widest">Numéro de commande</p>
                 <p className="text-xl font-black font-mono text-green-800">{createdOrderId}</p>
               </div>
-              
+              <div className="bg-emerald-600 text-white p-5 rounded-3xl space-y-1">
+                <p className="text-xs font-bold uppercase tracking-widest opacity-80">🔒 Code de livraison</p>
+                <p className="text-3xl font-black font-mono tracking-[0.3em]">{createdDeliveryCode}</p>
+                <p className="text-[11px] opacity-80">Gardez ce code : il sert à suivre votre commande et à confirmer la réception au livreur.</p>
+              </div>
+
               <div className="space-y-3">
                 <button 
                   onClick={() => {

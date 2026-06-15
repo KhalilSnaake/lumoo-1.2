@@ -16,11 +16,3 @@ export function parseAuthCallback(url: string | null): AuthCallback | null {
   if (!access_token || !refresh_token) return null;
   return { type: type as AuthCallbackType, access_token, refresh_token };
 }
-
-/** Compat ascendante : restreint au type recovery (consommé par `_layout` jusqu'à sa mise à jour). */
-export function parseRecoveryParams(url: string | null) {
-  const cb = parseAuthCallback(url);
-  return cb && cb.type === "recovery"
-    ? { access_token: cb.access_token, refresh_token: cb.refresh_token }
-    : null;
-}

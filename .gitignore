@@ -34,3 +34,6 @@ supabase/.temp
 apps/mobile/.expo
 apps/mobile/.env
 **/.env.local
+
+# Expo artefacts (toutes positions)
+.expo/

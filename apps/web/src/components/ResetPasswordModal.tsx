@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 
 export default function ResetPasswordModal() {

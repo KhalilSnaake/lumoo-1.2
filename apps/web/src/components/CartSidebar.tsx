@@ -1,7 +1,5 @@
-import { useCart } from '../context/CartContext';
-import { useOrders } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
-import { PaymentMethod } from '../types';
+import { useCart, useOrders, useAuth } from '@lumoo/core';
+import type { PaymentMethod } from '@lumoo/core';
 import { useState } from 'react';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import MaliPhoneInput from './MaliPhoneInput';

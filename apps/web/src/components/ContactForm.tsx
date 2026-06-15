@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { getSupabase } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { supabase } from '../lib/supabase';
 
 export default function ContactForm({ onClose }: { onClose: () => void }) {
   const { showToast } = useToast();
@@ -19,6 +19,7 @@ export default function ContactForm({ onClose }: { onClose: () => void }) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    const supabase = getSupabase();
     e.preventDefault();
     setIsSubmitting(true);
 

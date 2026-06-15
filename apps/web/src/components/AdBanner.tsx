@@ -1,5 +1,5 @@
-import { useAds } from '../context/AdContext';
-import { AdPosition } from '../types';
+import { useAds } from '@lumoo/core';
+import type { AdPosition } from '@lumoo/core';
 
 export default function AdBanner({ position }: { position: AdPosition }) {
   const { ads, loading } = useAds();

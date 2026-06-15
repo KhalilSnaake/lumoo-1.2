@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@lumoo/core';
+import type { User, UserRole } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { User, UserRole } from '../types/auth';
 import Logo from './Logo';
 
 const roleLabels: Record<UserRole, { label: string; emoji: string; color: string; bg: string }> = {

@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { useCart } from '../context/CartContext';
-import { useOrders } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
-import { useNotifications } from '../context/NotificationContext';
+import {
+  useCart,
+  useOrders,
+  useAuth,
+  useNotifications,
+  useProducts,
+  useCategories,
+  getSupabase,
+} from '@lumoo/core';
+import type { PaymentMethod, Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { useProducts } from '../context/ProductContext';
-import { useCategories } from '../context/CategoryContext';
-import { PaymentMethod, Product } from '../types';
 import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
-import { supabase } from '../lib/supabase';
 import ProductModal from './ProductModal';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
@@ -103,6 +105,7 @@ export default function CartBuilder() {
   const canPay = paymentMethod && (paymentMethod === 'livraison' || paymentPhone);
 
   const handlePayment = async () => {
+    const supabase = getSupabase();
     if (!paymentMethod) return;
     setIsSubmitting(true);
     try {

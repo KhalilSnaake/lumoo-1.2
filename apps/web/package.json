@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lumoo/core": "*",
     "@supabase/supabase-js": "^2.105.4",
     "clsx": "2.1.1",
     "exceljs": "^3.4.0",

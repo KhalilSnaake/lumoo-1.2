@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { ContactMessage } from '../types';
+import { getSupabase } from '@lumoo/core';
+import type { ContactMessage } from '@lumoo/core';
 import { useToast } from './ToastContext';
 
 type ContactMessagesContextType = {
@@ -24,6 +24,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
 
   // Fetch messages from Supabase
   const fetchMessages = useCallback(async () => {
+    const supabase = getSupabase();
     try {
       setLoading(true);
       console.log('📧 Fetching contact messages...');
@@ -65,6 +66,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
 
   // Real-time subscription for new messages
   useEffect(() => {
+    const supabase = getSupabase();
     const channel = supabase
       .channel('contact_messages_changes')
       .on(
@@ -88,6 +90,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   };
 
   const markAsRead = async (messageId: string) => {
+    const supabase = getSupabase();
     try {
       const { error } = await supabase
         .from('contact_messages')
@@ -108,6 +111,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   };
 
   const markAsUnread = async (messageId: string) => {
+    const supabase = getSupabase();
     try {
       const { error } = await supabase
         .from('contact_messages')
@@ -128,6 +132,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   };
 
   const sendReply = async (messageId: string, response: string) => {
+    const supabase = getSupabase();
     try {
       const { error } = await supabase
         .from('contact_messages')
@@ -154,6 +159,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteMessage = async (messageId: string) => {
+    const supabase = getSupabase();
     if (!confirm('Supprimer ce message définitivement ?')) return;
 
     try {
@@ -173,6 +179,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   };
 
   const createTestMessage = async () => {
+    const supabase = getSupabase();
     try {
       console.log('🧪 Creating test message...');
       const { error } = await supabase

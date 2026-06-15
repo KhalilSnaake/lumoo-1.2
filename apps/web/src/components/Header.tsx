@@ -1,8 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { useNotifications } from '../context/NotificationContext';
-import { useSearch } from '../context/SearchContext';
+import { useCart, useAuth, useNotifications, useSearch } from '@lumoo/core';
 
 
 import Logo from './Logo';

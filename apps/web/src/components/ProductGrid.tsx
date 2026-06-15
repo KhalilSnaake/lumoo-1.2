@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useProducts } from '../context/ProductContext';
-import { useCategories } from '../context/CategoryContext';
+import { useProducts, useCategories } from '@lumoo/core';
 import ProductCard from './ProductCard';
 
 type CategoryFilter = 'all' | number;

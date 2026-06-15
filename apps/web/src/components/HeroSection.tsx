@@ -1,4 +1,4 @@
-import { useCart } from '../context/CartContext';
+import { useCart } from '@lumoo/core';
 
 export default function HeroSection() {
   const { setIsCartBuilderOpen, totalItems } = useCart();

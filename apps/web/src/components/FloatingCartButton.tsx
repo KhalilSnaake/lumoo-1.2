@@ -1,4 +1,4 @@
-import { useCart } from '../context/CartContext';
+import { useCart } from '@lumoo/core';
 import { useState, useEffect } from 'react';
 
 export default function FloatingCartButton() {

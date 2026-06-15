@@ -1,5 +1,5 @@
-import { useNotifications } from '../context/NotificationContext';
-import { Notification, NotificationType } from '../types/notifications';
+import { useNotifications } from '@lumoo/core';
+import type { Notification, NotificationType } from '@lumoo/core';
 
 interface NotificationMenuProps {
   onClose: () => void;

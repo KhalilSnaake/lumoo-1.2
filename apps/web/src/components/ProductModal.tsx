@@ -1,5 +1,5 @@
-import { Product } from '../types';
-import { useCart } from '../context/CartContext';
+import { useCart } from '@lumoo/core';
+import type { Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import { useState } from 'react';
 import { optimizeImageUrl } from '../utils/images';

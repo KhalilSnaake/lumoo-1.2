@@ -1,7 +1,6 @@
 import Logo from './Logo';
 import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
-import { Product } from '../types';
-import { Category } from '../types/category';
+import type { Product, Category } from '@lumoo/core';
 
 export default function Footer({
   onOpenTracker,

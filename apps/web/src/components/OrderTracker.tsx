@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useOrders } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
-import { Order, OrderStatus, PaymentMethod } from '../types';
+import { useOrders, useAuth } from '@lumoo/core';
+import type { Order, OrderStatus, PaymentMethod } from '@lumoo/core';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 
 const paymentLogos: Record<PaymentMethod, React.ReactNode> = {

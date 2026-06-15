@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useOrders } from '../context/OrderContext';
+import { useAuth, useOrders, getSupabase } from '@lumoo/core';
+import type { OrderStatus } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { OrderStatus } from '../types';
 import Logo from './Logo';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
-import { supabase } from '../lib/supabase';
 import MaliPhoneInput from './MaliPhoneInput';
 
 const statusLabels: Record<OrderStatus, { label: string; color: string; bg: string; emoji: string }> = {
@@ -71,6 +69,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const supabase = getSupabase();
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { showToast('Image trop lourde (max 2Mo)', 'error'); return; }

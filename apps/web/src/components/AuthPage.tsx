@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, apiRequestPasswordReset } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
 import MaliPhoneInput from './MaliPhoneInput';
-import { apiRequestPasswordReset } from '../services/auth';
 
 
 export default function AuthPage() {

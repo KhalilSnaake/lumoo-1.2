@@ -550,15 +550,16 @@ git commit -m "refactor(core): déplacer services (auth, api) et les brancher su
 
 - [ ] **Step 1 : Déplacer les dossiers, puis ramener `ToastContext` côté web**
 
-`ToastContext` est le **seul** context qui rend du DOM (un viewport `<div>` de toasts) — vérifié. Il reste donc côté web (le mobile ne l'utilise pas dans ce lot). Tous les autres contexts sont purs et vont dans le core.
+Deux contexts restent côté web : `ToastContext` (rend un viewport `<div>` de toasts) et `ContactMessagesContext` (dépend de `useToast` ET fonctionnalité admin = web-only). Tous les autres sont purs et vont dans le core : `AuthContext`, `CartContext`, `OrderContext`, `ProductContext`, `CategoryContext`, `AdContext`, `NotificationContext`, `SearchContext`.
 
 ```bash
 cd /c/Dev/lumoo-mali
 git mv apps/web/src/context packages/core/src/context
 git mv apps/web/src/data packages/core/src/data
-# ToastContext rend du DOM (<div> viewport) → rester côté web
+# ToastContext (DOM) et ContactMessagesContext (dépend de useToast, admin web-only) → rester côté web
 mkdir -p apps/web/src/context
 git mv packages/core/src/context/ToastContext.tsx apps/web/src/context/ToastContext.tsx
+git mv packages/core/src/context/ContactMessagesContext.tsx apps/web/src/context/ContactMessagesContext.tsx
 ```
 
 - [ ] **Step 2 : Corriger les imports internes des contexts**
@@ -611,7 +612,7 @@ export * from './types';
 export * from './services/api';
 export * from './services/auth';
 
-// Contexts (providers + hooks) — PAS ToastContext (rendu DOM, reste côté web)
+// Contexts (providers + hooks) — PAS ToastContext ni ContactMessagesContext (web-only)
 export * from './context/AuthContext';
 export * from './context/CartContext';
 export * from './context/OrderContext';
@@ -620,7 +621,6 @@ export * from './context/CategoryContext';
 export * from './context/AdContext';
 export * from './context/NotificationContext';
 export * from './context/SearchContext';
-export * from './context/ContactMessagesContext';
 ```
 
 > Si deux modules exportent un même nom (collision), remplacer le `export *` fautif par des réexports nommés explicites. Le typecheck (Step 2) révèle les collisions.

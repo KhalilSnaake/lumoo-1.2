@@ -1,9 +1,8 @@
-import { useCart } from '../context/CartContext';
+import { useCart, useProducts } from '@lumoo/core';
+import type { Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { useProducts } from '../context/ProductContext';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ProductModal from './ProductModal';
-import { Product } from '../types';
 
 export default function PopularProducts() {
   const { addToCart } = useCart();

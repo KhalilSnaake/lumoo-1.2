@@ -1,30 +1,32 @@
 import { useState, useRef, useEffect } from 'react';
-import { useOrders } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
+import {
+  useOrders,
+  useAuth,
+  useProducts,
+  useAds,
+  useNotifications,
+  useCategories,
+  getSupabase,
+} from '@lumoo/core';
+import type { Order, OrderStatus, PaymentMethod, Product, Ad, AdPosition, ContactMessage, User, UserRole } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { useProducts } from '../context/ProductContext';
-import { useAds } from '../context/AdContext';
-import { useNotifications } from '../context/NotificationContext';
-import { useCategories } from '../context/CategoryContext';
 import { useContactMessages } from '../context/ContactMessagesContext';
-import { Order, OrderStatus, PaymentMethod, Product, Ad, AdPosition } from '../types';
-import { User, UserRole } from '../types/auth';
-import { ContactMessage } from '../types';
 import Logo from './Logo';
-import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
-import { supabase } from '../lib/supabase';
+import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import ExcelJS from 'exceljs';
 import readXlsxFile from 'read-excel-file/browser';
 import MaliPhoneInput from './MaliPhoneInput';
 
 const paymentLogos: Record<PaymentMethod, React.ReactNode> = {
   orange_money: <OrangeMoneyLogo className="w-4 h-4" />,
+  moov_money: <MoovMoneyLogo className="w-4 h-4" />,
   wave: <WaveLogo className="w-4 h-4" />,
   livraison: <CashLogo className="w-4 h-4" />,
 };
 
 const paymentNames: Record<PaymentMethod, string> = {
   orange_money: 'Orange Money',
+  moov_money: 'Moov Money',
   wave: 'Wave',
   livraison: 'Paiement à la livraison',
 };
@@ -369,6 +371,7 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
   };
 
   const handlePaymentProofUpload = async (e: React.ChangeEvent<HTMLInputElement>, order: Order) => {
+    const supabase = getSupabase();
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -732,6 +735,7 @@ function ProduitsTab() {
   const [isPopular, setIsPopular] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const supabase = getSupabase();
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { showToast('Image trop lourde (max 2Mo)', 'error'); return; }
@@ -1428,7 +1432,6 @@ function MessagesTab() {
 
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [replyContent, setReplyContent] = useState('');
-  const { showToast } = useToast();
 
   // Filtering and search state
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
@@ -1454,12 +1457,13 @@ function MessagesTab() {
   });
 
   // Toggle selection
-  const toggleSelection = (id: string) => {
+  const _toggleSelection = (id: string) => {
     const newSet = new Set(selectedIds);
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     setSelectedIds(newSet);
   };
+  void _toggleSelection;
 
   // Toggle all selection
   const toggleAllSelection = () => {
@@ -1635,6 +1639,7 @@ function AdsTab() {
   const [position, setPosition] = useState<AdPosition>('middle');
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const supabase = getSupabase();
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);

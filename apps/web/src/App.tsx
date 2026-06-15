@@ -73,7 +73,11 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
+      {/* TEMP — repère de vérification du déploiement monorepo. À RETIRER après confirmation. */}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[60] bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-lg pointer-events-none">
+        ✅ Nouvelle version en ligne (monorepo)
+      </div>
+      <Header
         onOpenAdmin={(orderId) => user?.role === 'admin' && setShowAdmin(orderId || true)} 
         onOpenTracker={() => setShowTracker(true)}
         onOpenDashboard={() => setShowDashboard(true)}

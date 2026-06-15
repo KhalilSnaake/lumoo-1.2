@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useOrders } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
-import { Order, OrderStatus, PaymentMethod } from '../types';
+import { OrderStatus, PaymentMethod } from '../types';
+import { supabase } from '../lib/supabase';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 
 const paymentLogos: Record<PaymentMethod, React.ReactNode> = {
@@ -29,17 +28,31 @@ const statusLabels: Record<OrderStatus, { label: string; emoji: string; color: s
 
 const statusOrder: OrderStatus[] = ['en_attente', 'confirmee', 'en_preparation', 'en_livraison', 'livree'];
 
+type TrackedItem = { name: string; emoji?: string; price: number; quantity: number; unit?: string };
+type TrackedOrder = {
+  id: string;
+  status: OrderStatus;
+  deliveryCode: string;
+  customerName: string;
+  address: string;
+  city: string;
+  gps_lat: number | null;
+  gps_lng: number | null;
+  paymentMethod: PaymentMethod;
+  totalPrice: number;
+  createdAt: string;
+  livreur: { name: string; phone: string } | null;
+  items: TrackedItem[];
+};
+
 export default function OrderTracker({ onClose }: { onClose: () => void }) {
-  const { getOrder } = useOrders();
-  const { users } = useAuth();
   const [orderId, setOrderId] = useState('');
-  const [order, setOrder] = useState<Order | null>(null);
+  const [code, setCode] = useState('');
+  const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState('');
   const [searching, setSearching] = useState(false);
 
   const formatPrice = (p: number) => p.toLocaleString('fr-FR');
-
-  const assignedLivreur = order?.livreurId ? users.find(u => u.id === order.livreurId) : null;
 
   const formatDate = (d: string) => {
     return new Date(d).toLocaleDateString('fr-FR', {
@@ -49,19 +62,22 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
   };
 
   const handleSearch = async () => {
-    if (!orderId.trim()) return;
+    if (!orderId.trim() || !code.trim()) return;
     setSearching(true);
     setError('');
     setOrder(null);
 
-    // Simulate search delay
-    await new Promise(r => setTimeout(r, 600));
+    // Lecture sécurisée : la fonction SQL ne renvoie la commande que si
+    // le numéro ET le code de livraison correspondent (RLS contournée de façon contrôlée).
+    const { data, error: rpcError } = await supabase.rpc('track_order', {
+      p_order_id: orderId.trim().toUpperCase(),
+      p_delivery_code: code.trim(),
+    });
 
-    const found = getOrder(orderId.trim().toUpperCase());
-    if (found) {
-      setOrder(found);
+    if (rpcError || !data) {
+      setError('Commande introuvable. Vérifiez le numéro et le code de livraison.');
     } else {
-      setError('Commande introuvable. Vérifiez le numéro et réessayez.');
+      setOrder(data as TrackedOrder);
     }
     setSearching(false);
   };
@@ -79,7 +95,7 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
         <div className="sticky top-0 bg-white rounded-t-3xl border-b border-gray-100 p-5 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-extrabold text-gray-800">📍 Suivi de commande</h2>
-            <p className="text-xs text-gray-400">Entrez votre numéro de commande</p>
+            <p className="text-xs text-gray-400">Numéro de commande + code de livraison</p>
           </div>
           <button
             onClick={onClose}
@@ -92,19 +108,28 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Search */}
-        <div className="p-5">
+        <div className="p-5 space-y-2">
+          <input
+            type="text"
+            value={orderId}
+            onChange={e => setOrderId(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            placeholder="N° commande — Ex: LUM-M5X7KQ-A2B4"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
           <div className="flex gap-2">
             <input
               type="text"
-              value={orderId}
-              onChange={e => setOrderId(e.target.value)}
+              inputMode="numeric"
+              value={code}
+              onChange={e => setCode(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Ex: LUM-M5X7KQ-A2B4"
+              placeholder="Code de livraison (4 chiffres)"
               className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             <button
               onClick={handleSearch}
-              disabled={searching || !orderId.trim()}
+              disabled={searching || !orderId.trim() || !code.trim()}
               className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {searching ? (
@@ -177,9 +202,9 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
                 <div className="text-right">
                   <span className="text-gray-700 block">{order.address}, {order.city}</span>
                   {order.gps_lat && order.gps_lng && (
-                    <a 
-                      href={`https://www.google.com/maps?q=${order.gps_lat},${order.gps_lng}`} 
-                      target="_blank" 
+                    <a
+                      href={`https://www.google.com/maps?q=${order.gps_lat},${order.gps_lng}`}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-[10px] text-blue-500 font-bold hover:underline inline-flex items-center gap-1 mt-1"
                     >
@@ -196,13 +221,13 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              {assignedLivreur && (
+              {order.livreur && (
                 <div className="mt-2 pt-2 border-t border-gray-100">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">🛵 Livreur assigné</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700">{assignedLivreur.name}</span>
-                    <a href={`tel:${assignedLivreur.phone}`} className="text-xs font-bold text-green-600 flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg">
-                      📞 {assignedLivreur.phone}
+                    <span className="text-xs font-bold text-gray-700">{order.livreur.name}</span>
+                    <a href={`tel:${order.livreur.phone}`} className="text-xs font-bold text-green-600 flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg">
+                      📞 {order.livreur.phone}
                     </a>
                   </div>
                 </div>
@@ -211,7 +236,7 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
               <div className="border-t border-gray-200 pt-2 space-y-1">
                 {order.items.map((item, i) => (
                   <div key={i} className="flex justify-between text-xs">
-                    <span className="text-gray-600">{item.emoji} {item.name} ×{item.quantity}</span>
+                    <span className="text-gray-600">{item.emoji || '📦'} {item.name} ×{item.quantity}</span>
                     <span className="font-medium text-gray-700">{formatPrice(item.price * item.quantity)} F</span>
                   </div>
                 ))}

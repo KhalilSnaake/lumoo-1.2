@@ -1,7 +1,7 @@
 import { User, RegisterInput, RegisterResult } from '../types/auth';
 import { supabase } from '../lib/supabase';
 
-const PROFILE_COLUMNS = 'id, name, email, phone, role, avatar, blocked, created_at';
+const PROFILE_COLUMNS = 'id, name, email, phone, role, avatar, blocked, address, city, created_at';
 
 // Construit le User de l'app à partir de la session Supabase + la ligne profiles.
 function toUser(authUserId: string, authEmail: string | undefined, profile: any): User {
@@ -14,6 +14,8 @@ function toUser(authUserId: string, authEmail: string | undefined, profile: any)
     createdAt: profile?.created_at ?? new Date().toISOString(),
     avatar: profile?.avatar ?? '',
     blocked: profile?.blocked ?? false,
+    address: profile?.address ?? '',
+    city: profile?.city ?? '',
   };
 }
 
@@ -92,6 +94,8 @@ export async function apiUpdateUser(id: string, updates: Partial<User>): Promise
   if (updates.role !== undefined) updateData.role = updates.role;
   if (updates.avatar !== undefined) updateData.avatar = updates.avatar;
   if (updates.blocked !== undefined) updateData.blocked = updates.blocked;
+  if (updates.address !== undefined) updateData.address = updates.address;
+  if (updates.city !== undefined) updateData.city = updates.city;
 
   const { data, error } = await supabase
     .from('profiles')

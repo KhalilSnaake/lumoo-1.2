@@ -157,6 +157,8 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
     if (user) {
       setName(prev => prev || user.name || '');
       setPhone(prev => prev || user.phone || '');
+      setAddress(prev => prev || user.address || '');
+      setCity(prev => prev || user.city || '');
     }
   }, [user]);
 

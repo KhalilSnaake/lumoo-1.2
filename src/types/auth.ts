@@ -10,6 +10,8 @@ export interface User {
   createdAt: string;
   avatar: string;
   blocked: boolean;
+  address?: string;
+  city?: string;
 }
 
 export type RegisterResult =

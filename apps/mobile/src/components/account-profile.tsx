@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { ChevronRight, LogOut, Package, Pencil, Truck } from "lucide-react-native";
 import { useAuth } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
+import { CityPicker } from "@/components/CityPicker";
 
 const ROLE_LABELS: Record<string, string> = {
   client: "Client",
@@ -25,6 +26,8 @@ export function AccountProfile() {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editCity, setEditCity] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +38,8 @@ export function AccountProfile() {
   const startEdit = () => {
     setEditName(user.name || "");
     setEditPhone(user.phone || "");
+    setEditAddress(user.address || "");
+    setEditCity(user.city || "");
     setError(null);
     setEditing(true);
   };
@@ -44,7 +49,7 @@ export function AccountProfile() {
     setSaving(true);
     setError(null);
     try {
-      const res = await updateUser(user.id, { name: editName.trim(), phone: editPhone.trim() });
+      const res = await updateUser(user.id, { name: editName.trim(), phone: editPhone.trim(), address: editAddress.trim(), city: editCity });
       if (res) setEditing(false);
       else setError("La mise à jour a échoué. Réessaie.");
     } catch (e) {
@@ -97,6 +102,19 @@ export function AccountProfile() {
           <View className="mt-3">
             <MaliPhoneInput value={editPhone} onChange={setEditPhone} label="Téléphone" />
           </View>
+          <Text className="mb-1 ml-1 mt-3 font-body-semibold text-xs text-muted">Adresse de livraison</Text>
+          <TextInput
+            value={editAddress}
+            onChangeText={setEditAddress}
+            placeholder="Ex : Badalabougou, près de la pharmacie…"
+            placeholderTextColor="#9CA3AF"
+            accessibilityLabel="Adresse de livraison"
+            multiline
+            style={{ textAlignVertical: "top" }}
+            className="min-h-20 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 font-body text-gray-900"
+          />
+          <Text className="mb-1 ml-1 mt-3 font-body-semibold text-xs text-muted">Ville</Text>
+          <CityPicker value={editCity} onChange={setEditCity} />
           {error ? <Text className="mt-2 font-body text-sm text-red-600">{error}</Text> : null}
           <View className="mt-4 flex-row gap-3">
             <Pressable

@@ -35,6 +35,8 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editCity, setEditCity] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -54,6 +56,8 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
       setEditPhone(user.phone);
       setEditEmail(user.email);
       setEditAvatar(user.avatar);
+      setEditAddress(user.address || '');
+      setEditCity(user.city || '');
     }
   }, [user, editingProfile]);
 
@@ -114,7 +118,9 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
         name: editName,
         phone: editPhone,
         email: editEmail,
-        avatar: editAvatar
+        avatar: editAvatar,
+        address: editAddress,
+        city: editCity
       };
       
       if (editPassword) updates.password = editPassword;
@@ -256,6 +262,28 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Adresse de livraison par défaut</label>
+                      <textarea
+                        value={editAddress}
+                        onChange={e => setEditAddress(e.target.value)}
+                        rows={2}
+                        placeholder="Ex: Badalabougou, près de la pharmacie..."
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Ville</label>
+                      <select
+                        value={editCity}
+                        onChange={e => setEditCity(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                      >
+                        <option value="">Sélectionner une ville</option>
+                        {['Bamako', 'Sikasso', 'Kayes', 'Ségou', 'Mopti', 'Gao', 'Tombouctou', 'Koulikoro'].map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+
                     <div className="pt-2">
                       <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nouveau mot de passe (Facultatif)</label>
                       <div className="relative">
@@ -340,6 +368,13 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                       <p className="text-sm font-bold text-gray-800">{order.customerName}</p>
                       <p className="text-xs text-gray-500 italic">{order.address}, {order.city}</p>
                     </div>
+
+                    {user.role !== 'livreur' && order.deliveryCode && (
+                      <div className="flex items-center justify-between rounded-2xl bg-green-50 px-3 py-2">
+                        <span className="text-xs font-semibold text-green-700">Code de retrait</span>
+                        <span className="font-mono text-base font-black tracking-widest text-green-800">{order.deliveryCode}</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                       <div className="flex items-center gap-2">

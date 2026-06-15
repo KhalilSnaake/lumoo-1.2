@@ -9,6 +9,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+  // L'app a été déplacée dans apps/web ; on garde le chargement du .env depuis
+  // la racine du monorepo (emplacement historique des variables VITE_*).
+  envDir: path.resolve(__dirname, "../.."),
   plugins: [react(), tailwindcss(), viteSingleFile()],
   resolve: {
     alias: {

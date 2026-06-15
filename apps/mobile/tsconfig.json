@@ -2,19 +2,24 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ],
       "@/assets/*": [
         "./assets/*"
-      ]
+      ],
+      "@lumoo/core": ["../../packages/core/src/index.ts"],
+      "@lumoo/core/*": ["../../packages/core/src/*"]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
   ]
 }

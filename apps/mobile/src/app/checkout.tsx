@@ -40,6 +40,7 @@ export default function CheckoutScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const [paymentPhone, setPaymentPhone] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [deliveryCode, setDeliveryCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +80,7 @@ export default function CheckoutScreen() {
         paymentPhone,
       });
       setOrderId(order.id);
+      setDeliveryCode(order.deliveryCode);
       setStep("confirmation");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Une erreur est survenue. Réessaie.");
@@ -182,6 +184,11 @@ export default function CheckoutScreen() {
             <View className="w-full items-center rounded-3xl border border-green-100 bg-green-50 p-5">
               <Text className="font-body text-[11px] uppercase tracking-widest text-green-700">Numéro de commande</Text>
               <Text className="mt-1 font-display text-xl text-green-800">{orderId}</Text>
+            </View>
+            <View className="w-full items-center rounded-3xl bg-brand p-5">
+              <Text className="font-body text-[11px] uppercase tracking-widest text-white opacity-80">🔒 Code de livraison</Text>
+              <Text className="mt-1 font-display text-3xl text-white" style={{ letterSpacing: 6 }}>{deliveryCode}</Text>
+              <Text className="mt-1 text-center font-body text-[11px] text-white opacity-80">Gardez ce code : il sert au suivi et à la remise au livreur.</Text>
             </View>
             <Pressable onPress={sendWhatsApp} accessibilityRole="button" accessibilityLabel="Confirmer par WhatsApp" className="h-12 w-full flex-row items-center justify-center gap-2 rounded-2xl bg-whatsapp active:opacity-90">
               <Text className="font-display-semibold text-white">Confirmer par WhatsApp</Text>

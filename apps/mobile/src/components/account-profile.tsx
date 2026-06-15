@@ -157,7 +157,7 @@ export function AccountProfile() {
           onPress={() => router.push("/commandes")}
         />
         <View className="ml-16 h-px bg-gray-100" />
-        <Row icon={<Truck size={20} color="#16a34a" />} label="Suivi de livraison" soon />
+        <Row icon={<Truck size={20} color="#16a34a" />} label="Suivi de livraison" onPress={() => router.push("/suivi")} />
       </View>
 
       {/* Déconnexion */}

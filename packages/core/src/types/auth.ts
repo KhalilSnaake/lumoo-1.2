@@ -18,7 +18,7 @@ export interface AuthContextType {
   user: User | null;
   users: User[];
   login: (email: string, password: string) => Promise<User | null>;
-  register: (data: RegisterInput) => Promise<User | null>;
+  register: (data: RegisterInput) => Promise<{ user: User | null; needsConfirmation: boolean }>;
   createUser: (data: RegisterInput) => Promise<User | null>;
   logout: () => void;
   updateUser: (id: string, updates: Partial<User>) => Promise<User | null>;

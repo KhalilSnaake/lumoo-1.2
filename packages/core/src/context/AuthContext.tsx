@@ -49,9 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {
-    const u = await apiRegister(input);
-    if (u) { setUser(u); setShowAuth(false); }
-    return u;
+    const { user: u, needsConfirmation } = await apiRegister(input);
+    if (u && !needsConfirmation) { setUser(u); setShowAuth(false); }
+    return { user: u, needsConfirmation };
   }, []);
 
   const createUser = useCallback(async (input: RegisterInput) => {

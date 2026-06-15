@@ -44,18 +44,26 @@ export async function apiLogin(email: string, password: string): Promise<User | 
   return toUser(data.user.id, data.user.email, profile);
 }
 
-export async function apiRegister(input: RegisterInput): Promise<User | null> {
+export async function apiRegister(
+  input: RegisterInput,
+): Promise<{ user: User | null; needsConfirmation: boolean }> {
   const supabase = getSupabase();
   const email = input.email.trim().toLowerCase();
   const { data, error } = await supabase.auth.signUp({
     email,
     password: input.password,
-    options: { data: { name: input.name, phone: input.phone.trim() } },
+    options: {
+      data: { name: input.name, phone: input.phone.trim() },
+      emailRedirectTo: getAuthRedirectUrl(),
+    },
   });
   if (error) throw new Error(error.message || 'Erreur lors de la création du compte');
-  if (!data.user) return null;
+  const needsConfirmation = !data.session;
+  if (needsConfirmation || !data.user) {
+    return { user: null, needsConfirmation };
+  }
   const profile = await fetchProfile(data.user.id);
-  return toUser(data.user.id, data.user.email, profile);
+  return { user: toUser(data.user.id, data.user.email, profile), needsConfirmation };
 }
 
 // Option simple : la création de compte par l'admin n'est plus possible (clé service requise).

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -42,6 +42,14 @@ export default function CheckoutScreen() {
   const [orderId, setOrderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pré-remplir nom + téléphone depuis le profil quand l'utilisateur est connecté
+  useEffect(() => {
+    if (user) {
+      setName((prev) => prev || user.name || "");
+      setPhone((prev) => prev || user.phone || "");
+    }
+  }, [user]);
 
   const canProceed = !!(name && phone && address && city);
   const canPay = !!paymentMethod && (paymentMethod === "livraison" || !!paymentPhone);

@@ -2,7 +2,7 @@ import { useCart } from '../context/CartContext';
 import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import { PaymentMethod } from '../types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
@@ -151,6 +151,14 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
   const [createdOrderId, setCreatedOrderId] = useState('');
   const [createdDeliveryCode, setCreatedDeliveryCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pré-remplir nom + téléphone depuis le profil quand l'utilisateur est connecté
+  useEffect(() => {
+    if (user) {
+      setName(prev => prev || user.name || '');
+      setPhone(prev => prev || user.phone || '');
+    }
+  }, [user]);
 
   const formatPrice = (price: number) => price.toLocaleString('fr-FR');
 

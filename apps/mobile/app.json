@@ -38,6 +38,12 @@
             "imageWidth": 200
           }
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Lumoo utilise votre position pour préciser le lieu de livraison."
+        }
       ]
     ],
     "experiments": {

@@ -15,6 +15,8 @@ export default function AuthPage() {
   // Reset password
   const [resetEmailOrPhone, setResetEmailOrPhone] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [regSent, setRegSent] = useState(false);
 
 
   // Login fields
@@ -32,6 +34,8 @@ export default function AuthPage() {
   const handleTabChange = (newMode: 'login' | 'register' | 'reset') => {
     setMode(newMode);
     setError('');
+    setResetSent(false);
+    setRegSent(false);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -62,9 +66,7 @@ export default function AuthPage() {
     setError('');
     try {
       await apiRequestPasswordReset(email);
-      showToast('Si un compte existe, un email de réinitialisation a été envoyé.');
-      setResetEmailOrPhone('');
-      setMode('login');
+      setResetSent(true);
     } catch (err: any) {
       setError(err?.message || 'Erreur lors de la demande');
     } finally {
@@ -95,8 +97,10 @@ export default function AuthPage() {
     
     setLoading(true);
     try {
-      const user = await register({ name: regName, email: regEmail, phone: regPhone, password: regPassword, role: regRole });
-      if (user) {
+      const { user, needsConfirmation } = await register({ name: regName, email: regEmail, phone: regPhone, password: regPassword, role: regRole });
+      if (needsConfirmation) {
+        setRegSent(true);
+      } else if (user) {
         showToast(`Compte créé avec succès ! Bienvenue ${user.name}`);
       } else {
         setError('Erreur lors de l\'inscription (réponse vide)');
@@ -212,8 +216,11 @@ export default function AuthPage() {
 
           {/* Register Form */}
           {/* Reset Form */}
-          {mode === 'reset' && (
+          {mode === 'reset' && !resetSent && (
             <form onSubmit={handleResetPassword} className="p-6 space-y-4">
+              <p className="text-sm text-gray-500">
+                Entrez votre email : nous vous enverrons un lien pour choisir un nouveau mot de passe.
+              </p>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">📧 Email</label>
                 <input
@@ -246,7 +253,30 @@ export default function AuthPage() {
             </form>
           )}
 
-          {mode === 'register' && (
+          {mode === 'reset' && resetSent && (
+            <div className="p-6 space-y-4 text-center animate-bounce-in">
+              <span className="text-5xl block">📬</span>
+              <h3 className="text-lg font-extrabold text-gray-800">Vérifiez votre boîte mail</h3>
+              <p className="text-sm text-gray-500">
+                Si un compte existe pour <span className="font-bold text-gray-700">{resetEmailOrPhone}</span>, un email de réinitialisation vient d'être envoyé.
+              </p>
+              <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-left space-y-1.5">
+                <p className="text-xs text-gray-600"><span className="font-bold text-green-700">1.</span> Ouvrez l'email de Lumoo.</p>
+                <p className="text-xs text-gray-600"><span className="font-bold text-green-700">2.</span> Cliquez sur le lien « Réinitialiser le mot de passe ».</p>
+                <p className="text-xs text-gray-600"><span className="font-bold text-green-700">3.</span> Choisissez votre nouveau mot de passe.</p>
+              </div>
+              <p className="text-[11px] text-gray-400">Pensez à vérifier vos spams. Le lien expire au bout d'une heure.</p>
+              <button
+                type="button"
+                onClick={() => { setResetSent(false); setMode('login'); setError(''); setResetEmailOrPhone(''); }}
+                className="w-full py-3.5 bg-gray-50 text-gray-700 font-bold rounded-xl hover:bg-gray-100 transition-all text-sm"
+              >
+                ← Retour à la connexion
+              </button>
+            </div>
+          )}
+
+          {mode === 'register' && !regSent && (
             <form onSubmit={handleRegister} className="p-6 space-y-4">
 
               <div>
@@ -312,6 +342,29 @@ export default function AuthPage() {
                 ) : '✨ Créer mon compte'}
               </button>
             </form>
+          )}
+
+          {mode === 'register' && regSent && (
+            <div className="p-6 space-y-4 text-center animate-bounce-in">
+              <span className="text-5xl block">📬</span>
+              <h3 className="text-lg font-extrabold text-gray-800">Vérifiez votre boîte mail</h3>
+              <p className="text-sm text-gray-500">
+                Un email d'activation a été envoyé à <span className="font-bold text-gray-700">{regEmail}</span>.
+              </p>
+              <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-left space-y-1.5">
+                <p className="text-xs text-gray-600"><span className="font-bold text-green-700">1.</span> Ouvrez l'email de Lumoo.</p>
+                <p className="text-xs text-gray-600"><span className="font-bold text-green-700">2.</span> Cliquez sur le lien d'activation.</p>
+                <p className="text-xs text-gray-600"><span className="font-bold text-green-700">3.</span> Connectez-vous.</p>
+              </div>
+              <p className="text-[11px] text-gray-400">Pensez à vérifier vos spams.</p>
+              <button
+                type="button"
+                onClick={() => { setRegSent(false); handleTabChange('login'); }}
+                className="w-full py-3.5 bg-gray-50 text-gray-700 font-bold rounded-xl hover:bg-gray-100 transition-all text-sm"
+              >
+                ← Aller à la connexion
+              </button>
+            </div>
           )}
         </div>
 

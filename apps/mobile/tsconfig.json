@@ -11,15 +11,17 @@
       "@/assets/*": [
         "./assets/*"
       ],
-      "@lumoo/core": ["../../packages/core/src/index.ts"],
-      "@lumoo/core/*": ["../../packages/core/src/*"]
+      "@lumoo/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@lumoo/core/*": [
+        "../../packages/core/src/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
     "nativewind-env.d.ts"
   ]
 }

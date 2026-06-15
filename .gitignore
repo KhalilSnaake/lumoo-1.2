@@ -29,3 +29,11 @@ dist-ssr
 
 # Supabase
 supabase/.temp
+
+# Mobile / Expo
+apps/mobile/.expo
+apps/mobile/.env
+**/.env.local
+
+# Expo artefacts (toutes positions)
+.expo/

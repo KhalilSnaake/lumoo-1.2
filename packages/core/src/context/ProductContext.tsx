@@ -53,6 +53,33 @@ function rowToProduct(row: any): Product {
   };
 }
 
+export type ProductsPageOpts = { page: number; pageSize: number; categoryId?: number | null; search?: string };
+
+// Pagination SERVEUR du catalogue : ne charge qu'une page (~20) à la fois via .range().
+// Additif — ne remplace pas le chargement complet du ProductContext (utilisé par l'admin/web).
+// Filtres (catégorie/recherche/published) faits côté serveur pour rester cohérents page à page.
+export async function apiGetProductsPage(opts: ProductsPageOpts): Promise<{ products: Product[]; hasMore: boolean }> {
+  const supabase = getSupabase();
+  const { page, pageSize, categoryId, search } = opts;
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from('products')
+    .select('*, categories(id, name, slug, created_at)')
+    .or('published.is.null,published.eq.true')
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (categoryId != null) query = query.eq('category_id', categoryId);
+  const s = (search ?? '').trim();
+  if (s) query = query.ilike('name', `%${s}%`);
+
+  const { data, error } = await query;
+  if (error || !data) return { products: [], hasMore: false };
+  return { products: data.map(rowToProduct), hasMore: data.length === pageSize };
+}
+
 
 
 

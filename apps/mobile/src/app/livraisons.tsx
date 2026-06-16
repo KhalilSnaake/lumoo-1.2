@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Linking, Pressable, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft, MapPin, Phone } from "lucide-react-native";
@@ -46,16 +46,22 @@ export default function LivraisonsScreen() {
         ) : null}
       </View>
 
-      <ScrollView contentContainerClassName="p-4 gap-4" keyboardShouldPersistTaps="handled">
-        {mine.length === 0 ? (
+      <FlatList
+        data={mine}
+        keyExtractor={(o) => o.id}
+        renderItem={({ item }) => <DeliveryCard order={item} />}
+        contentContainerClassName="p-4 gap-4"
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={8}
+        windowSize={7}
+        removeClippedSubviews
+        ListEmptyComponent={
           <View className="mt-16 items-center">
             <Text className="text-5xl">📭</Text>
             <Text className="mt-3 font-body text-gray-400">Aucune livraison assignée pour le moment.</Text>
           </View>
-        ) : (
-          mine.map((o) => <DeliveryCard key={o.id} order={o} />)
-        )}
-      </ScrollView>
+        }
+      />
     </View>
   );
 }

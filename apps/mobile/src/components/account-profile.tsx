@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, LogOut, Package, Pencil, Truck } from "lucide-react-native";
+import { ChevronRight, KeyRound, LogOut, Package, Pencil, Truck } from "lucide-react-native";
 import { useAuth } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
@@ -159,6 +159,12 @@ export function AccountProfile() {
         />
         <View className="ml-16 h-px bg-gray-100" />
         <Row icon={<Truck size={20} color="#16a34a" />} label="Suivi de livraison" onPress={() => router.push("/suivi")} />
+        <View className="ml-16 h-px bg-gray-100" />
+        <Row
+          icon={<KeyRound size={20} color="#16a34a" />}
+          label="Changer mon mot de passe"
+          onPress={() => router.push("/changer-mot-de-passe")}
+        />
       </View>
 
       {/* Espace livreur — visible uniquement pour les comptes livreur */}

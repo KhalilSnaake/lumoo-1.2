@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, MapPin, Phone, Search } from "lucide-react-native";
 import { apiTrackOrder, type OrderStatus, type PaymentMethod } from "@lumoo/core";
 
@@ -46,19 +46,20 @@ type TrackedOrder = {
 
 export default function SuiviScreen() {
   const insets = useSafeAreaInsets();
-  const [orderId, setOrderId] = useState("");
-  const [code, setCode] = useState("");
+  const params = useLocalSearchParams<{ id?: string; code?: string }>();
+  const [orderId, setOrderId] = useState(params.id ?? "");
+  const [code, setCode] = useState(params.code ?? "");
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
 
-  const search = async () => {
-    if (!orderId.trim() || !code.trim()) return;
+  const runSearch = async (oid: string, c: string) => {
+    if (!oid.trim() || !c.trim()) return;
     setSearching(true);
     setError(null);
     setOrder(null);
     try {
-      const data = await apiTrackOrder(orderId, code);
+      const data = await apiTrackOrder(oid, c);
       if (!data) setError("Commande introuvable. Vérifie le numéro et le code de livraison.");
       else setOrder(data as TrackedOrder);
     } catch {
@@ -67,6 +68,14 @@ export default function SuiviScreen() {
       setSearching(false);
     }
   };
+
+  const search = () => runSearch(orderId, code);
+
+  // Pré-rempli depuis le détail d'une commande → recherche automatique une fois.
+  useEffect(() => {
+    if (params.id && params.code) runSearch(params.id, params.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stepIndex = order ? STEPS.indexOf(order.status) : -1;
 

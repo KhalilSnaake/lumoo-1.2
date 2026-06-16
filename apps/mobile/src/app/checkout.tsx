@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
@@ -7,7 +7,7 @@ import { useCart, useOrders, useAuth, type PaymentMethod } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
 import { LocationPicker } from "@/components/LocationPicker";
-import { OrangeMoneyLogo, WaveLogo, CashLogo } from "@/components/PaymentLogos";
+import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from "@/components/PaymentLogos";
 import { openOrder } from "@/lib/whatsapp";
 
 function formatFCFA(n: number) {
@@ -18,6 +18,7 @@ type Step = "livraison" | "paiement" | "confirmation";
 
 const PAYMENTS: { id: PaymentMethod; name: string; desc: string; logo: ReactNode }[] = [
   { id: "orange_money", name: "Orange Money", desc: "Payez avec Orange Money", logo: <OrangeMoneyLogo /> },
+  { id: "moov_money", name: "Moov Money", desc: "Payez avec Moov Money", logo: <MoovMoneyLogo /> },
   { id: "wave", name: "Wave", desc: "Payez avec Wave", logo: <WaveLogo /> },
   { id: "livraison", name: "Paiement à la livraison", desc: "Payez en espèces à la réception", logo: <CashLogo /> },
 ];
@@ -119,7 +120,8 @@ export default function CheckoutScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerClassName="p-4" keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView contentContainerClassName="p-4 pb-40" keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {step === "livraison" ? (
           <View className="gap-4">
             <View className="flex-row items-center justify-between rounded-2xl border border-green-100 bg-green-50 p-4">
@@ -199,6 +201,7 @@ export default function CheckoutScreen() {
           </View>
         ) : null}
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

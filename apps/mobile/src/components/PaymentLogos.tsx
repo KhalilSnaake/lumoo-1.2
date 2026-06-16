@@ -1,4 +1,22 @@
-import Svg, { Path, Rect, G } from "react-native-svg";
+import Svg, { Path, Rect, G, Text as SvgText } from "react-native-svg";
+
+export function MoovMoneyLogo() {
+  return (
+    <Svg width={36} height={36} viewBox="0 0 36 36">
+      <Rect width={36} height={36} rx={8} fill="#F58220" />
+      <SvgText
+        x={18}
+        y={23}
+        fontSize={11}
+        fontWeight="bold"
+        fill="#ffffff"
+        textAnchor="middle"
+      >
+        moov
+      </SvgText>
+    </Svg>
+  );
+}
 
 export function OrangeMoneyLogo() {
   return (

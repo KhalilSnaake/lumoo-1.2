@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { ChevronRight, LogOut, Package, Pencil, Truck } from "lucide-react-native";
 import { useAuth } from "@lumoo/core";
@@ -60,7 +60,8 @@ export function AccountProfile() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50" contentContainerClassName="px-5 pt-6 pb-10" keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <ScrollView className="flex-1 bg-gray-50" contentContainerClassName="px-5 pt-6 pb-40" keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
       {/* Carte profil */}
       <View className="flex-row items-center rounded-3xl bg-white p-5" style={CARD_SHADOW}>
         <View className="h-16 w-16 items-center justify-center rounded-full bg-brand">
@@ -160,6 +161,18 @@ export function AccountProfile() {
         <Row icon={<Truck size={20} color="#16a34a" />} label="Suivi de livraison" onPress={() => router.push("/suivi")} />
       </View>
 
+      {/* Espace livreur — visible uniquement pour les comptes livreur */}
+      {user.role === "livreur" ? (
+        <>
+          <Text className="mb-2 ml-1 mt-8 text-xs font-bold uppercase tracking-wider text-gray-400">
+            Espace livreur
+          </Text>
+          <View className="overflow-hidden rounded-3xl bg-white" style={CARD_SHADOW}>
+            <Row icon={<Truck size={20} color="#16a34a" />} label="Mes livraisons" onPress={() => router.push("/livraisons")} />
+          </View>
+        </>
+      ) : null}
+
       {/* Déconnexion */}
       <Pressable
         onPress={logout}
@@ -172,6 +185,7 @@ export function AccountProfile() {
 
       <Text className="mt-8 text-center text-xs text-gray-300">Lumoo — Mali</Text>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

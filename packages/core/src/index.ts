@@ -10,6 +10,9 @@ export * from './types';
 export * from './services/api';
 export * from './services/auth';
 
+// Contenu légal partagé (CGU/CGV/confidentialité/mentions) — source unique web + mobile
+export * from './legal/documents';
+
 // Contexts (providers + hooks) — NOT ToastContext / ContactMessagesContext (web-only)
 export * from './context/AuthContext';
 export * from './context/CartContext';

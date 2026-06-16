@@ -149,6 +149,16 @@ export default function RootLayout() {
                     headerTitleStyle: { fontWeight: "800", color: "#16a34a" },
                   }}
                 />
+                <Stack.Screen
+                  name="contact"
+                  options={{
+                    headerShown: true,
+                    title: "Nous contacter",
+                    headerStyle: { backgroundColor: "#ffffff" },
+                    headerTintColor: "#16a34a",
+                    headerTitleStyle: { fontWeight: "800", color: "#16a34a" },
+                  }}
+                />
               </Stack>
               <WhatsAppButton />
               <CreateAccountModal />

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, KeyRound, LogOut, Package, Pencil, Truck } from "lucide-react-native";
+import { ChevronRight, KeyRound, LogOut, MessageCircle, Package, Pencil, Truck } from "lucide-react-native";
 import { useAuth } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
@@ -178,6 +178,18 @@ export function AccountProfile() {
           </View>
         </>
       ) : null}
+
+      {/* Aide */}
+      <Text className="mb-2 ml-1 mt-8 text-xs font-bold uppercase tracking-wider text-gray-400">
+        Aide
+      </Text>
+      <View className="overflow-hidden rounded-3xl bg-white" style={CARD_SHADOW}>
+        <Row
+          icon={<MessageCircle size={20} color="#16a34a" />}
+          label="Nous contacter"
+          onPress={() => router.push("/contact")}
+        />
+      </View>
 
       {/* Déconnexion */}
       <Pressable

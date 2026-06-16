@@ -37,3 +37,14 @@ apps/mobile/.env
 
 # Expo artefacts (toutes positions)
 .expo/
+
+# Brainstorm visual companion (scratch)
+.superpowers/
+
+# Images / captures déposées par erreur à la racine du repo
+/*.png
+/*.jpg
+/*.jpeg
+
+# tsconfig.json racine généré par Expo (parasite — le vrai est tsconfig.base.json)
+/tsconfig.json

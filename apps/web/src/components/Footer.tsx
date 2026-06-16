@@ -1,13 +1,16 @@
 import Logo from './Logo';
 import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import type { Product, Category } from '@lumoo/core';
+import { LEGAL_DOC_LINKS } from '@lumoo/core';
 
 export default function Footer({
   onOpenTracker,
+  onOpenLegal,
   products = [],
   categories = [],
 }: {
   onOpenTracker: () => void;
+  onOpenLegal: (slug: string) => void;
   products?: Product[];
   categories?: Category[];
 }) {
@@ -124,8 +127,21 @@ export default function Footer({
           </div>
         </div>
 
+        {/* Liens légaux (CGU / CGV / Confidentialité / Mentions) */}
+        <div className="border-t border-gray-800 mt-10 pt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          {LEGAL_DOC_LINKS.map((l) => (
+            <button
+              key={l.slug}
+              onClick={() => onOpenLegal(l.slug)}
+              className="text-xs text-gray-400 hover:text-green-400 transition-colors"
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+
         {/* Bottom */}
-        <div className="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500">
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500">
           <p>© 2025 Lumoo. Tous droits réservés.</p>
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
             <p>Fait avec 💚 au Mali</p>

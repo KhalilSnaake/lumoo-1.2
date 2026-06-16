@@ -73,7 +73,12 @@ export async function apiGetProductsPage(opts: ProductsPageOpts): Promise<{ prod
 
   if (categoryId != null) query = query.eq('category_id', categoryId);
   const s = (search ?? '').trim();
-  if (s) query = query.ilike('name', `%${s}%`);
+  if (s) {
+    // Recherche nom OU description. On nettoie le terme (lettres/chiffres/espaces/tirets
+    // uniquement) pour qu'aucun caractère ne casse/injecte la syntaxe du filtre `.or`.
+    const safe = s.replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ').trim();
+    if (safe) query = query.or(`name.ilike.%${safe}%,description.ilike.%${safe}%`);
+  }
 
   const { data, error } = await query;
   if (error || !data) return { products: [], hasMore: false };

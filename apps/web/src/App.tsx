@@ -28,6 +28,7 @@ import AuthPage from './components/AuthPage';
 import Footer from './components/Footer';
 import OrderTracker from './components/OrderTracker';
 import AdBanner from './components/AdBanner';
+import LegalModal from './components/LegalModal';
 import ContactForm from './components/ContactForm';
 import ResetPasswordModal from './components/ResetPasswordModal';
 
@@ -67,6 +68,7 @@ function MainApp() {
   const [showDashboard, setShowDashboard] = useState<string | boolean>(false);
   const [showTracker, setShowTracker] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [legalSlug, setLegalSlug] = useState<string | null>(null);
 
   // Expose admin open to window for quick access from dashboard
   (window as any).openAdmin = () => setShowAdmin(true);
@@ -126,6 +128,7 @@ function MainApp() {
 
       <Footer
         onOpenTracker={() => setShowTracker(true)}
+        onOpenLegal={(slug) => setLegalSlug(slug)}
         products={products}
         categories={categories}
       />
@@ -143,6 +146,9 @@ function MainApp() {
 
       {/* Contact Form Modal */}
       {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
+
+      {/* Documents légaux (CGU/CGV/confidentialité/mentions) — source partagée avec le mobile */}
+      {legalSlug && <LegalModal slug={legalSlug} onClose={() => setLegalSlug(null)} />}
 
       {/* Reset password (après clic sur le lien email) */}
       {passwordRecovery && <ResetPasswordModal />}

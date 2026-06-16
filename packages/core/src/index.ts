@@ -10,6 +10,9 @@ export * from './types';
 export * from './services/api';
 export * from './services/auth';
 
+// Contenu légal partagé (mobile + web)
+export * from './legal/documents';
+
 // Contexts (providers + hooks) — NOT ToastContext / ContactMessagesContext (web-only)
 export * from './context/AuthContext';
 export * from './context/CartContext';

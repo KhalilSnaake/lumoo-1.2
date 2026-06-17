@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -8,8 +8,9 @@ import {
   View,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Package, ShoppingBag } from "lucide-react-native";
+import { MapPin, Package, ShoppingBag } from "lucide-react-native";
 import { useAuth, useOrders, type Order, type OrderStatus } from "@lumoo/core";
+import { getRecentOrders, type RecentOrder } from "@/lib/recent-orders";
 
 const CARD_SHADOW = {
   shadowColor: "#0F172A",
@@ -42,17 +43,79 @@ function formatDate(iso?: string) {
 export default function CommandesScreen() {
   const { user } = useAuth();
   const { orders, loading, refreshOrders } = useOrders();
+  const [recent, setRecent] = useState<RecentOrder[]>([]);
 
-  // Rafraîchit à chaque ouverture de l'écran (données fraîches après connexion).
+  // Rafraîchit à chaque ouverture : commandes serveur (connecté) + commandes
+  // enregistrées localement sur l'appareil (invité, sans compte).
   useFocusEffect(
     useCallback(() => {
       refreshOrders();
-    }, [refreshOrders]),
+      if (!user) getRecentOrders().then(setRecent);
+    }, [refreshOrders, user]),
   );
 
-  // Filtrage côté client : on ne montre que les commandes de l'utilisateur connecté,
-  // en plus du RLS Supabase.
-  const myOrders = user ? orders.filter((o) => o.userId === user.id) : [];
+  // ───── Invité : pas de compte → on s'appuie sur les commandes locales (n° + code) ─────
+  if (!user) {
+    if (recent.length === 0) {
+      return (
+        <View className="flex-1 items-center justify-center bg-gray-50 px-8">
+          <View className="h-20 w-20 items-center justify-center rounded-full bg-green-50">
+            <ShoppingBag size={40} color="#16a34a" />
+          </View>
+          <Text className="mt-4 font-display text-lg text-gray-800">Suivre une commande</Text>
+          <Text className="mt-1 text-center font-body text-gray-500">
+            Entre ton numéro de commande et ton code de livraison — pas besoin de compte.
+          </Text>
+          <Pressable
+            onPress={() => router.push("/suivi")}
+            accessibilityRole="button"
+            style={CARD_SHADOW}
+            className="mt-6 h-12 w-full items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
+          >
+            <Text className="font-display-semibold text-white">📍 Suivre ma commande</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.replace("/catalogue")}
+            accessibilityRole="button"
+            className="mt-3 h-12 w-full items-center justify-center rounded-2xl bg-gray-100 px-6 active:opacity-80"
+          >
+            <Text className="font-body-semibold text-gray-700">Voir le catalogue</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        className="flex-1 bg-gray-50"
+        data={recent}
+        keyExtractor={(o) => o.id}
+        contentContainerClassName="p-4"
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View className="mb-3">
+            <Text className="font-display text-lg text-ink">Tes commandes récentes</Text>
+            <Text className="mt-0.5 font-body text-xs text-gray-400">
+              Enregistrées sur cet appareil — touche une commande pour la suivre.
+            </Text>
+          </View>
+        }
+        renderItem={({ item }) => <RecentOrderCard order={item} />}
+        ListFooterComponent={
+          <Pressable
+            onPress={() => router.push("/suivi")}
+            accessibilityRole="button"
+            className="mt-1 h-12 items-center justify-center rounded-2xl bg-gray-100 active:opacity-80"
+          >
+            <Text className="font-body-semibold text-gray-700">Suivre une autre commande (n° + code)</Text>
+          </Pressable>
+        }
+      />
+    );
+  }
+
+  // ───── Connecté : commandes serveur (RLS Supabase + filtre user_id) ─────
+  const myOrders = orders.filter((o) => o.userId === user.id);
 
   if (loading && myOrders.length === 0) {
     return (
@@ -69,46 +132,20 @@ export default function CommandesScreen() {
         <View className="h-20 w-20 items-center justify-center rounded-full bg-green-50">
           <ShoppingBag size={40} color="#16a34a" />
         </View>
-        {user ? (
-          <>
-            <Text className="mt-4 font-display text-lg text-gray-800">
-              Aucune commande pour l&apos;instant
-            </Text>
-            <Text className="mt-1 text-center font-body text-gray-500">
-              Parcours le catalogue et passe ta première commande.
-            </Text>
-            <Pressable
-              onPress={() => router.replace("/catalogue")}
-              accessibilityRole="button"
-              style={CARD_SHADOW}
-              className="mt-6 h-12 items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
-            >
-              <Text className="font-display-semibold text-white">Découvrir le catalogue</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text className="mt-4 font-display text-lg text-gray-800">Suivre une commande</Text>
-            <Text className="mt-1 text-center font-body text-gray-500">
-              Entre ton numéro de commande et ton code de livraison — pas besoin de compte.
-            </Text>
-            <Pressable
-              onPress={() => router.push("/suivi")}
-              accessibilityRole="button"
-              style={CARD_SHADOW}
-              className="mt-6 h-12 w-full items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
-            >
-              <Text className="font-display-semibold text-white">📍 Suivre ma commande</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => router.replace("/catalogue")}
-              accessibilityRole="button"
-              className="mt-3 h-12 w-full items-center justify-center rounded-2xl bg-gray-100 px-6 active:opacity-80"
-            >
-              <Text className="font-body-semibold text-gray-700">Voir le catalogue</Text>
-            </Pressable>
-          </>
-        )}
+        <Text className="mt-4 font-display text-lg text-gray-800">
+          Aucune commande pour l&apos;instant
+        </Text>
+        <Text className="mt-1 text-center font-body text-gray-500">
+          Parcours le catalogue et passe ta première commande.
+        </Text>
+        <Pressable
+          onPress={() => router.replace("/catalogue")}
+          accessibilityRole="button"
+          style={CARD_SHADOW}
+          className="mt-6 h-12 items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
+        >
+          <Text className="font-display-semibold text-white">Découvrir le catalogue</Text>
+        </Pressable>
       </View>
     );
   }
@@ -183,6 +220,39 @@ const OrderCard = memo(function OrderCard({ order }: { order: Order }) {
       <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
         <Text className="font-body text-gray-500">Total</Text>
         <Text className="font-display text-lg text-brand">{formatFCFA(order.totalPrice)}</Text>
+      </View>
+    </Pressable>
+  );
+});
+
+// Carte d'une commande enregistrée localement (invité). Touche → suivi auto via /suivi.
+const RecentOrderCard = memo(function RecentOrderCard({ order }: { order: RecentOrder }) {
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: "/suivi", params: { id: order.id, code: order.code } })}
+      accessibilityRole="button"
+      accessibilityLabel={`Suivre la commande ${order.id}`}
+      className="mb-3 rounded-3xl bg-white p-4 active:opacity-90"
+      style={CARD_SHADOW}
+    >
+      <View className="flex-row items-center justify-between">
+        <Text className="font-display text-gray-900">{order.id}</Text>
+        <View className="flex-row items-center gap-1 rounded-full bg-green-50 px-3 py-1">
+          <MapPin size={13} color="#16a34a" />
+          <Text className="text-xs font-bold text-green-700">Suivre</Text>
+        </View>
+      </View>
+
+      {!!order.date && <Text className="mt-1 text-xs text-gray-400">{formatDate(order.date)}</Text>}
+
+      <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
+        <View className="flex-row items-center gap-2 rounded-xl bg-green-50 px-3 py-1.5">
+          <Text className="font-body text-[11px] text-green-700">Code</Text>
+          <Text className="font-display tracking-widest text-green-800">{order.code}</Text>
+        </View>
+        {order.total > 0 ? (
+          <Text className="font-display text-lg text-brand">{formatFCFA(order.total)}</Text>
+        ) : null}
       </View>
     </Pressable>
   );

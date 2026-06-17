@@ -9,6 +9,7 @@ import { CityPicker } from "@/components/CityPicker";
 import { LocationPicker } from "@/components/LocationPicker";
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from "@/components/PaymentLogos";
 import { openOrder } from "@/lib/whatsapp";
+import { saveRecentOrder } from "@/lib/recent-orders";
 
 function formatFCFA(n: number) {
   return `${n.toLocaleString("fr-FR")} FCFA`;
@@ -82,6 +83,13 @@ export default function CheckoutScreen() {
       });
       setOrderId(order.id);
       setDeliveryCode(order.deliveryCode);
+      // Persistance locale : permet de re-suivre la commande sans compte (surtout les invités).
+      void saveRecentOrder({
+        id: order.id,
+        code: order.deliveryCode,
+        date: order.createdAt ?? new Date().toISOString(),
+        total: order.totalPrice ?? totalPrice,
+      });
       setStep("confirmation");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Une erreur est survenue. Réessaie.");

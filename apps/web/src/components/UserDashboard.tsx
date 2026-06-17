@@ -379,9 +379,12 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                     </div>
 
                     {user.role !== 'livreur' && order.deliveryCode && (
-                      <div className="flex items-center justify-between rounded-2xl bg-green-50 px-3 py-2">
-                        <span className="text-xs font-semibold text-green-700">Code de retrait</span>
-                        <span className="font-mono text-base font-black tracking-widest text-green-800">{order.deliveryCode}</span>
+                      <div className="rounded-2xl bg-green-50 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-green-700">Code de retrait</span>
+                          <span className="font-mono text-base font-black tracking-widest text-green-800">{order.deliveryCode}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-amber-700">⚠️ À communiquer au livreur uniquement à la réception du colis.</p>
                       </div>
                     )}
 

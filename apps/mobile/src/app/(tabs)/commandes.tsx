@@ -211,9 +211,14 @@ const OrderCard = memo(function OrderCard({ order }: { order: Order }) {
       )}
 
       {!!order.deliveryCode && (
-        <View className="mt-3 flex-row items-center justify-between rounded-2xl bg-green-50 px-3 py-2">
-          <Text className="font-body text-xs text-green-700">Code de retrait</Text>
-          <Text className="font-display text-base tracking-widest text-green-800">{order.deliveryCode}</Text>
+        <View className="mt-3 rounded-2xl bg-green-50 px-3 py-2">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-body text-xs text-green-700">Code de retrait</Text>
+            <Text className="font-display text-base tracking-widest text-green-800">{order.deliveryCode}</Text>
+          </View>
+          <Text className="mt-1 font-body text-[11px] text-amber-700">
+            ⚠️ À donner au livreur uniquement à la réception du colis.
+          </Text>
         </View>
       )}
 
@@ -254,6 +259,9 @@ const RecentOrderCard = memo(function RecentOrderCard({ order }: { order: Recent
           <Text className="font-display text-lg text-brand">{formatFCFA(order.total)}</Text>
         ) : null}
       </View>
+      <Text className="mt-2 font-body text-[11px] text-amber-700">
+        ⚠️ À donner au livreur uniquement à la réception du colis.
+      </Text>
     </Pressable>
   );
 });

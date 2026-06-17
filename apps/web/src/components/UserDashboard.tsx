@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth, useOrders, getSupabase } from '@lumoo/core';
-import type { OrderStatus } from '@lumoo/core';
+import { useAuth, useOrders, getSupabase, apiGetLivreurOrders, apiConfirmDelivery } from '@lumoo/core';
+import type { Order, OrderStatus } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
@@ -28,6 +28,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('orders');
   const [editingProfile, setEditingProfile] = useState(false);
+  const [livreurOrders, setLivreurOrders] = useState<Order[]>([]);
   
   // Profile edit form state
   const [editName, setEditName] = useState('');
@@ -46,6 +47,14 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
     refreshOrders();
   }, [refreshOrders]);
 
+  // Livreur : ses livraisons proviennent de get_livreur_orders (sans le code de
+  // livraison), pas de la table orders (la RLS ne l'autorise plus au livreur).
+  const reloadLivreurOrders = () => apiGetLivreurOrders().then(setLivreurOrders);
+  useEffect(() => {
+    if (user?.role === 'livreur') reloadLivreurOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
+
   useEffect(() => {
     if (initialOrderId) setActiveTab('orders');
   }, [initialOrderId]);
@@ -63,10 +72,10 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
 
   if (!user) return null;
 
-  const myOrders = user.role === 'client' 
+  const myOrders = user.role === 'client'
     ? orders.filter(o => o.userId === user.id)
     : user.role === 'livreur'
-    ? orders.filter(o => o.livreurId === user.id)
+    ? livreurOrders
     : [];
 
   const fmt = (p: number) => p.toLocaleString('fr-FR');
@@ -386,9 +395,9 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                         <DeliveryValidationModal 
                           order={order} 
                           onValidate={(receivedBy: string) => {
-                            refreshOrders();
+                            reloadLivreurOrders();
                             showToast(`Commande livrée à ${receivedBy} ! 🎉`);
-                          }} 
+                          }}
                         />
                       )}
                     </div>
@@ -415,11 +424,9 @@ function DeliveryValidationModal({ order, onValidate }: { order: any; onValidate
   const [code, setCode] = useState('');
   const [receivedBy, setReceivedBy] = useState('');
   const [error, setError] = useState('');
-  const { updateOrder } = useOrders();
-
   const handleValidate = async () => {
-    if (code !== order.deliveryCode) {
-      setError('Code incorrect. Demandez le code à 4 chiffres au client.');
+    if (code.length < 4) {
+      setError('Saisissez le code à 4 chiffres du client.');
       return;
     }
     if (!receivedBy.trim()) {
@@ -427,11 +434,14 @@ function DeliveryValidationModal({ order, onValidate }: { order: any; onValidate
       return;
     }
 
-    await updateOrder(order.id, {
-      status: 'livree',
-      receivedBy: receivedBy.trim()
-    });
-    
+    // Validation côté serveur : le code est vérifié dans confirm_delivery,
+    // jamais comparé ici (l'app livreur ne reçoit plus le code).
+    const ok = await apiConfirmDelivery(order.id, code, receivedBy);
+    if (!ok) {
+      setError('Code incorrect. Demandez le code à 4 chiffres au client.');
+      return;
+    }
+
     onValidate(receivedBy);
     setIsOpen(false);
   };

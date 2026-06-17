@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CartProvider, useCart,
   OrderProvider,
@@ -8,6 +8,7 @@ import {
   AuthProvider, useAuth,
   NotificationProvider,
   SearchProvider,
+  getLegalDoc,
 } from '@lumoo/core';
 import { ToastProvider } from './context/ToastContext';
 import { ContactMessagesProvider } from './context/ContactMessagesContext';
@@ -29,6 +30,7 @@ import Footer from './components/Footer';
 import OrderTracker from './components/OrderTracker';
 import AdBanner from './components/AdBanner';
 import LegalModal from './components/LegalModal';
+import AccountDeletionModal from './components/AccountDeletionModal';
 import ContactForm from './components/ContactForm';
 import ResetPasswordModal from './components/ResetPasswordModal';
 
@@ -69,13 +71,42 @@ function MainApp() {
   const [showTracker, setShowTracker] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
+  const [showDeletion, setShowDeletion] = useState(false);
+
+  // Ouvre une page légale (?legal=confidentialite) ou la page de suppression de
+  // compte (?delete-account) directement depuis l'URL → URLs publiques partageables
+  // requises par les stores (confidentialité + suppression de compte).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('legal');
+    if (slug && getLegalDoc(slug)) setLegalSlug(slug);
+    if (params.has('delete-account')) setShowDeletion(true);
+  }, []);
+
+  const cleanParam = (key: string) => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has(key)) {
+      url.searchParams.delete(key);
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    }
+  };
+
+  const closeLegal = () => {
+    setLegalSlug(null);
+    cleanParam('legal');
+  };
+
+  const closeDeletion = () => {
+    setShowDeletion(false);
+    cleanParam('delete-account');
+  };
 
   // Expose admin open to window for quick access from dashboard
   (window as any).openAdmin = () => setShowAdmin(true);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
+      <Header 
         onOpenAdmin={(orderId) => user?.role === 'admin' && setShowAdmin(orderId || true)} 
         onOpenTracker={() => setShowTracker(true)}
         onOpenDashboard={() => setShowDashboard(true)}
@@ -148,7 +179,10 @@ function MainApp() {
       {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
 
       {/* Documents légaux (CGU/CGV/confidentialité/mentions) — source partagée avec le mobile */}
-      {legalSlug && <LegalModal slug={legalSlug} onClose={() => setLegalSlug(null)} />}
+      {legalSlug && <LegalModal slug={legalSlug} onClose={closeLegal} />}
+
+      {/* Suppression de compte (URL publique ?delete-account — exigence Google Play) */}
+      {showDeletion && <AccountDeletionModal onClose={closeDeletion} />}
 
       {/* Reset password (après clic sur le lien email) */}
       {passwordRecovery && <ResetPasswordModal />}

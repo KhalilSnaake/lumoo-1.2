@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth, useOrders, getSupabase, apiGetLivreurOrders, apiConfirmDelivery } from '@lumoo/core';
+import { useAuth, useOrders, getSupabase, apiGetLivreurOrders, apiConfirmDelivery, apiDeleteOwnAccount } from '@lumoo/core';
 import type { Order, OrderStatus } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
@@ -29,6 +29,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('orders');
   const [editingProfile, setEditingProfile] = useState(false);
   const [livreurOrders, setLivreurOrders] = useState<Order[]>([]);
+  const [deleting, setDeleting] = useState(false);
   
   // Profile edit form state
   const [editName, setEditName] = useState('');
@@ -77,6 +78,21 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
     : user.role === 'livreur'
     ? livreurOrders
     : [];
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Supprimer définitivement votre compte ? Votre profil et votre compte de connexion seront supprimés. Vos commandes passées seront dissociées de votre compte.")) return;
+    setDeleting(true);
+    try {
+      await apiDeleteOwnAccount();
+      showToast('Compte supprimé.');
+      logout();
+      onClose();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "La suppression a échoué. Réessayez ou écrivez à contact@lumoo.ml.", 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const fmt = (p: number) => p.toLocaleString('fr-FR');
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -350,6 +366,16 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 Déconnexion
               </button>
+
+              {user.role !== 'admin' && (
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="w-full py-3 text-gray-400 text-sm font-semibold hover:text-red-600 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? 'Suppression…' : 'Supprimer mon compte'}
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-4 animate-slide-up">
@@ -379,9 +405,12 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                     </div>
 
                     {user.role !== 'livreur' && order.deliveryCode && (
-                      <div className="flex items-center justify-between rounded-2xl bg-green-50 px-3 py-2">
-                        <span className="text-xs font-semibold text-green-700">Code de retrait</span>
-                        <span className="font-mono text-base font-black tracking-widest text-green-800">{order.deliveryCode}</span>
+                      <div className="rounded-2xl bg-green-50 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-green-700">Code de retrait</span>
+                          <span className="font-mono text-base font-black tracking-widest text-green-800">{order.deliveryCode}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-amber-700">⚠️ À communiquer au livreur uniquement à la réception du colis.</p>
                       </div>
                     )}
 

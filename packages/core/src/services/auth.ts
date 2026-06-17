@@ -137,6 +137,17 @@ export async function apiUpdateOwnPassword(newPassword: string): Promise<void> {
   if (error) throw new Error(error.message || 'Erreur lors du changement de mot de passe');
 }
 
+// Suppression de SON PROPRE compte (RGPD + exigence Google Play). Le client n'a
+// pas les droits admin pour supprimer un user auth → on passe par la fonction
+// SECURITY DEFINER `delete_my_account`, puis on déconnecte. Les commandes passées
+// sont dissociées du compte (user_id = null), pas supprimées.
+export async function apiDeleteOwnAccount(): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw new Error(error.message || 'Erreur lors de la suppression du compte');
+  await supabase.auth.signOut();
+}
+
 // Demande de reset par email.
 export async function apiRequestPasswordReset(email: string): Promise<void> {
   const supabase = getSupabase();

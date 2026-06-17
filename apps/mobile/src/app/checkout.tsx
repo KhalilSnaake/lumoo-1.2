@@ -2,7 +2,8 @@ import { useState, useEffect, type ReactNode } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { Check, ChevronLeft, Copy } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
 import { useCart, useOrders, useAuth, type PaymentMethod } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
@@ -45,6 +46,7 @@ export default function CheckoutScreen() {
   const [deliveryCode, setDeliveryCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Pré-remplir nom + téléphone depuis le profil quand l'utilisateur est connecté
   useEffect(() => {
@@ -96,6 +98,14 @@ export default function CheckoutScreen() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const copyInfos = async () => {
+    await Clipboard.setStringAsync(
+      `Lumoo — ma commande\nN° : ${orderId}\nCode de livraison : ${deliveryCode}`,
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const sendWhatsApp = () => {
@@ -200,6 +210,17 @@ export default function CheckoutScreen() {
               <Text className="mt-1 font-display text-3xl text-white" style={{ letterSpacing: 6 }}>{deliveryCode}</Text>
               <Text className="mt-1 text-center font-body text-[11px] text-white opacity-80">Gardez ce code : il sert au suivi et à la remise au livreur.</Text>
             </View>
+            <Pressable
+              onPress={copyInfos}
+              accessibilityRole="button"
+              accessibilityLabel="Copier le numéro et le code de la commande"
+              className="h-12 w-full flex-row items-center justify-center gap-2 rounded-2xl border-2 border-brand bg-white active:opacity-80"
+            >
+              {copied ? <Check size={18} color="#16a34a" /> : <Copy size={18} color="#16a34a" />}
+              <Text className="font-display-semibold text-brand">
+                {copied ? "Copié ✓" : "Copier mon n° et mon code"}
+              </Text>
+            </Pressable>
             <Pressable onPress={sendWhatsApp} accessibilityRole="button" accessibilityLabel="Confirmer par WhatsApp" className="h-12 w-full flex-row items-center justify-center gap-2 rounded-2xl bg-whatsapp active:opacity-90">
               <Text className="font-display-semibold text-white">Confirmer par WhatsApp</Text>
             </Pressable>

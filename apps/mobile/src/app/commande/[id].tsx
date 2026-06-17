@@ -20,6 +20,14 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   livraison: "Paiement à la livraison",
 };
 
+const BRAND_SHADOW = {
+  shadowColor: "#16a34a",
+  shadowOpacity: 0.25,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 4,
+} as const;
+
 function formatFCFA(n: number) {
   return `${n.toLocaleString("fr-FR")} FCFA`;
 }
@@ -63,6 +71,20 @@ export default function OrderDetailScreen() {
           <Text className="mt-1 font-body text-xs text-gray-400">{formatDate(order.createdAt)}</Text>
         </View>
 
+        {/* Suivi — mis en évidence */}
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/suivi", params: { id: order.id, code: order.deliveryCode } })
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Suivre ma commande"
+          style={BRAND_SHADOW}
+          className="mt-3 h-14 flex-row items-center justify-center gap-2 rounded-2xl bg-brand active:opacity-80"
+        >
+          <Truck size={20} color="#ffffff" />
+          <Text className="font-display-semibold text-base text-white">Suivre ma commande</Text>
+        </Pressable>
+
         {/* Code de retrait */}
         {!!order.deliveryCode && (
           <View className="mt-3 items-center rounded-3xl bg-brand p-4">
@@ -71,6 +93,9 @@ export default function OrderDetailScreen() {
             </Text>
             <Text className="mt-1 font-display text-2xl text-white" style={{ letterSpacing: 6 }}>
               {order.deliveryCode}
+            </Text>
+            <Text className="mt-2 text-center font-body text-[11px] text-white opacity-90">
+              ⚠️ À donner au livreur uniquement à la réception du colis.
             </Text>
           </View>
         )}
@@ -115,19 +140,6 @@ export default function OrderDetailScreen() {
           <InfoRow label="Paiement" value={PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod} />
         </View>
 
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/suivi",
-              params: { id: order.id, code: order.deliveryCode },
-            })
-          }
-          accessibilityRole="button"
-          className="mt-6 h-12 flex-row items-center justify-center gap-2 rounded-2xl bg-brand active:opacity-80"
-        >
-          <Truck size={18} color="#ffffff" />
-          <Text className="font-display-semibold text-white">Suivre ma commande</Text>
-        </Pressable>
       </ScrollView>
     </View>
   );

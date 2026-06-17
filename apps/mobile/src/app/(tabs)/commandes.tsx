@@ -215,18 +215,6 @@ const OrderCard = memo(function OrderCard({ order }: { order: Order }) {
         </Text>
       )}
 
-      {!!order.deliveryCode && (
-        <View className="mt-3 rounded-2xl bg-green-50 px-3 py-2">
-          <View className="flex-row items-center justify-between">
-            <Text className="font-body text-xs text-green-700">Code de retrait</Text>
-            <Text className="font-display text-base tracking-widest text-green-800">{order.deliveryCode}</Text>
-          </View>
-          <Text className="mt-1 font-body text-[11px] text-amber-700">
-            ⚠️ À donner au livreur uniquement à la réception du colis.
-          </Text>
-        </View>
-      )}
-
       <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
         <Text className="font-body text-gray-500">Total</Text>
         <Text className="font-display text-lg text-brand">{formatFCFA(order.totalPrice)}</Text>
@@ -283,18 +271,12 @@ const RecentOrderCard = memo(function RecentOrderCard({
 
       {!!order.date && <Text className="mt-1 text-xs text-gray-400">{formatDate(order.date)}</Text>}
 
-      <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
-        <View className="flex-row items-center gap-2 rounded-xl bg-green-50 px-3 py-1.5">
-          <Text className="font-body text-[11px] text-green-700">Code</Text>
-          <Text className="font-display tracking-widest text-green-800">{order.code}</Text>
-        </View>
-        {order.total > 0 ? (
+      {order.total > 0 ? (
+        <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
+          <Text className="font-body text-gray-500">Total</Text>
           <Text className="font-display text-lg text-brand">{formatFCFA(order.total)}</Text>
-        ) : null}
-      </View>
-      <Text className="mt-2 font-body text-[11px] text-amber-700">
-        ⚠️ À donner au livreur uniquement à la réception du colis.
-      </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 });

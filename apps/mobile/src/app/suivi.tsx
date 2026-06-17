@@ -181,6 +181,9 @@ export default function SuiviScreen() {
               ) : null}
               <Detail label="Paiement" value={PAYMENT_NAMES[order.paymentMethod]} />
               <Detail label="Code livraison" value={order.deliveryCode} mono />
+              <Text className="mb-2 font-body text-[11px] text-amber-700">
+                ⚠️ À donner au livreur uniquement à la réception du colis.
+              </Text>
 
               <View className="mt-2 border-t border-gray-100 pt-2">
                 {order.items.map((it, i) => (

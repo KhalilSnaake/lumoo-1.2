@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CartProvider, useCart,
   OrderProvider,
@@ -8,6 +8,7 @@ import {
   AuthProvider, useAuth,
   NotificationProvider,
   SearchProvider,
+  getLegalDoc,
 } from '@lumoo/core';
 import { ToastProvider } from './context/ToastContext';
 import { ContactMessagesProvider } from './context/ContactMessagesContext';
@@ -69,6 +70,24 @@ function MainApp() {
   const [showTracker, setShowTracker] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [legalSlug, setLegalSlug] = useState<string | null>(null);
+
+  // Ouvre une page légale directement depuis l'URL (ex. ?legal=confidentialite)
+  // → fournit une URL publique partageable pour la politique de confidentialité
+  // et les CGU/CGV/mentions (requis par les stores).
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('legal');
+    if (slug && getLegalDoc(slug)) setLegalSlug(slug);
+  }, []);
+
+  const closeLegal = () => {
+    setLegalSlug(null);
+    // Nettoie le paramètre ?legal de l'URL sans recharger la page.
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('legal')) {
+      url.searchParams.delete('legal');
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    }
+  };
 
   // Expose admin open to window for quick access from dashboard
   (window as any).openAdmin = () => setShowAdmin(true);
@@ -148,7 +167,7 @@ function MainApp() {
       {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
 
       {/* Documents légaux (CGU/CGV/confidentialité/mentions) — source partagée avec le mobile */}
-      {legalSlug && <LegalModal slug={legalSlug} onClose={() => setLegalSlug(null)} />}
+      {legalSlug && <LegalModal slug={legalSlug} onClose={closeLegal} />}
 
       {/* Reset password (après clic sur le lien email) */}
       {passwordRecovery && <ResetPasswordModal />}

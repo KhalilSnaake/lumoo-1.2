@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { ActivityIndicator, FlatList, Linking, Pressable, Text, TextInput, View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, FlatList, Linking, Pressable, RefreshControl, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { ChevronLeft, MapPin, Phone } from "lucide-react-native";
-import { useAuth, useOrders, type Order, type OrderStatus } from "@lumoo/core";
+import { apiGetLivreurOrders, apiConfirmDelivery, type Order, type OrderStatus } from "@lumoo/core";
 
 function formatFCFA(n: number) {
   return `${n.toLocaleString("fr-FR")} FCFA`;
@@ -25,12 +25,21 @@ const ORDER_RANK: Record<OrderStatus, number> = {
 
 export default function LivraisonsScreen() {
   const insets = useSafeAreaInsets();
-  const { orders } = useOrders();
-  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const mine = (user ? orders.filter((o) => o.livreurId === user.id) : [])
-    .slice()
-    .sort((a, b) => ORDER_RANK[a.status] - ORDER_RANK[b.status]);
+  // Lecture isolée : on passe par get_livreur_orders (sans le code de livraison),
+  // pas par la table orders (la RLS ne l'autorise plus au livreur).
+  const reload = useCallback(() => {
+    setLoading(true);
+    apiGetLivreurOrders()
+      .then(setOrders)
+      .finally(() => setLoading(false));
+  }, []);
+
+  useFocusEffect(reload);
+
+  const mine = orders.slice().sort((a, b) => ORDER_RANK[a.status] - ORDER_RANK[b.status]);
 
   return (
     <View className="flex-1 bg-gray-50" style={{ paddingTop: insets.top }}>
@@ -49,25 +58,31 @@ export default function LivraisonsScreen() {
       <FlatList
         data={mine}
         keyExtractor={(o) => o.id}
-        renderItem={({ item }) => <DeliveryCard order={item} />}
+        renderItem={({ item }) => <DeliveryCard order={item} onValidated={reload} />}
         contentContainerClassName="p-4 gap-4"
         keyboardShouldPersistTaps="handled"
         initialNumToRender={8}
         windowSize={7}
         removeClippedSubviews
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} tintColor="#16a34a" colors={["#16a34a"]} />}
         ListEmptyComponent={
-          <View className="mt-16 items-center">
-            <Text className="text-5xl">📭</Text>
-            <Text className="mt-3 font-body text-gray-400">Aucune livraison assignée pour le moment.</Text>
-          </View>
+          loading ? (
+            <View className="mt-16 items-center">
+              <ActivityIndicator color="#16a34a" />
+            </View>
+          ) : (
+            <View className="mt-16 items-center">
+              <Text className="text-5xl">📭</Text>
+              <Text className="mt-3 font-body text-gray-400">Aucune livraison assignée pour le moment.</Text>
+            </View>
+          )
         }
       />
     </View>
   );
 }
 
-function DeliveryCard({ order }: { order: Order }) {
-  const { updateOrder } = useOrders();
+function DeliveryCard({ order, onValidated }: { order: Order; onValidated: () => void }) {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
   const [receivedBy, setReceivedBy] = useState("");
@@ -77,8 +92,8 @@ function DeliveryCard({ order }: { order: Order }) {
   const st = STATUS[order.status];
 
   const validate = async () => {
-    if (code !== order.deliveryCode) {
-      setError("Code incorrect. Demande le code à 4 chiffres au client.");
+    if (code.length < 4) {
+      setError("Saisis le code à 4 chiffres du client.");
       return;
     }
     if (!receivedBy.trim()) {
@@ -88,8 +103,15 @@ function DeliveryCard({ order }: { order: Order }) {
     setSaving(true);
     setError(null);
     try {
-      await updateOrder(order.id, { status: "livree", receivedBy: receivedBy.trim() });
-      setOpen(false);
+      // Validation côté serveur : le code est vérifié dans confirm_delivery,
+      // jamais comparé ici (l'app du livreur ne reçoit plus le code).
+      const ok = await apiConfirmDelivery(order.id, code, receivedBy);
+      if (ok) {
+        setOpen(false);
+        onValidated();
+      } else {
+        setError("Code incorrect. Demande le code à 4 chiffres au client.");
+      }
     } catch {
       setError("Une erreur est survenue. Réessaie.");
     } finally {

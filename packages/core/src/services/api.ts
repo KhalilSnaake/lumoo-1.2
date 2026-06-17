@@ -124,6 +124,34 @@ export async function apiTrackOrder(orderId: string, deliveryCode: string): Prom
   return data;
 }
 
+// Livreur : liste de ses livraisons assignées SANS le code de livraison.
+// Passe par la fonction SECURITY DEFINER get_livreur_orders (la RLS n'autorise
+// plus le livreur à lire orders directement → le code ne lui est jamais exposé).
+export async function apiGetLivreurOrders(): Promise<Order[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc('get_livreur_orders');
+  if (error || !data) return [];
+  return (data as any[]).map((o) => rowToOrder(o, o.items || []));
+}
+
+// Livreur : validation de livraison côté SERVEUR. Le code est vérifié dans
+// confirm_delivery (SECURITY DEFINER) — jamais comparé dans l'app du livreur.
+// Renvoie true si validé, false si code incorrect / commande introuvable.
+export async function apiConfirmDelivery(
+  orderId: string,
+  deliveryCode: string,
+  receivedBy: string,
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.rpc('confirm_delivery', {
+    p_order_id: orderId,
+    p_delivery_code: deliveryCode.trim(),
+    p_received_by: receivedBy.trim(),
+  });
+  if (error) return false;
+  return data === true;
+}
+
 export async function apiGetOrders(): Promise<Order[]> {
   const supabase = getSupabase();
   // Fetch orders

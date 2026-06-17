@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -8,9 +9,9 @@ import {
   View,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { MapPin, Package, ShoppingBag } from "lucide-react-native";
+import { MapPin, Package, ShoppingBag, Trash2 } from "lucide-react-native";
 import { useAuth, useOrders, type Order, type OrderStatus } from "@lumoo/core";
-import { getRecentOrders, type RecentOrder } from "@/lib/recent-orders";
+import { getRecentOrders, removeRecentOrder, type RecentOrder } from "@/lib/recent-orders";
 
 const CARD_SHADOW = {
   shadowColor: "#0F172A",
@@ -45,13 +46,17 @@ export default function CommandesScreen() {
   const { orders, loading, refreshOrders } = useOrders();
   const [recent, setRecent] = useState<RecentOrder[]>([]);
 
+  const loadRecent = useCallback(() => {
+    getRecentOrders().then(setRecent);
+  }, []);
+
   // Rafraîchit à chaque ouverture : commandes serveur (connecté) + commandes
   // enregistrées localement sur l'appareil (invité, sans compte).
   useFocusEffect(
     useCallback(() => {
       refreshOrders();
-      if (!user) getRecentOrders().then(setRecent);
-    }, [refreshOrders, user]),
+      if (!user) loadRecent();
+    }, [refreshOrders, user, loadRecent]),
   );
 
   // ───── Invité : pas de compte → on s'appuie sur les commandes locales (n° + code) ─────
@@ -100,7 +105,7 @@ export default function CommandesScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => <RecentOrderCard order={item} />}
+        renderItem={({ item }) => <RecentOrderCard order={item} onRemoved={loadRecent} />}
         ListFooterComponent={
           <Pressable
             onPress={() => router.push("/suivi")}
@@ -231,7 +236,24 @@ const OrderCard = memo(function OrderCard({ order }: { order: Order }) {
 });
 
 // Carte d'une commande enregistrée localement (invité). Touche → suivi auto via /suivi.
-const RecentOrderCard = memo(function RecentOrderCard({ order }: { order: RecentOrder }) {
+const RecentOrderCard = memo(function RecentOrderCard({
+  order,
+  onRemoved,
+}: {
+  order: RecentOrder;
+  onRemoved: () => void;
+}) {
+  const remove = () => {
+    Alert.alert(
+      "Retirer cette commande ?",
+      "Elle sera retirée de cet appareil. Sans le code, tu ne pourras plus la suivre.",
+      [
+        { text: "Annuler", style: "cancel" },
+        { text: "Retirer", style: "destructive", onPress: () => removeRecentOrder(order.id).then(onRemoved) },
+      ],
+    );
+  };
+
   return (
     <Pressable
       onPress={() => router.push({ pathname: "/suivi", params: { id: order.id, code: order.code } })}
@@ -242,9 +264,20 @@ const RecentOrderCard = memo(function RecentOrderCard({ order }: { order: Recent
     >
       <View className="flex-row items-center justify-between">
         <Text className="font-display text-gray-900">{order.id}</Text>
-        <View className="flex-row items-center gap-1 rounded-full bg-green-50 px-3 py-1">
-          <MapPin size={13} color="#16a34a" />
-          <Text className="text-xs font-bold text-green-700">Suivre</Text>
+        <View className="flex-row items-center gap-2">
+          <View className="flex-row items-center gap-1 rounded-full bg-green-50 px-3 py-1">
+            <MapPin size={13} color="#16a34a" />
+            <Text className="text-xs font-bold text-green-700">Suivre</Text>
+          </View>
+          <Pressable
+            onPress={remove}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={`Retirer la commande ${order.id}`}
+            className="h-9 w-9 items-center justify-center rounded-full active:bg-gray-100"
+          >
+            <Trash2 size={16} color="#9CA3AF" />
+          </Pressable>
         </View>
       </View>
 

@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronRight, KeyRound, LogOut, MessageCircle, Package, Pencil, Truck } from "lucide-react-native";
-import { useAuth } from "@lumoo/core";
+import { ChevronRight, KeyRound, LogOut, MessageCircle, Package, Pencil, Trash2, Truck } from "lucide-react-native";
+import { useAuth, apiDeleteOwnAccount } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
 
@@ -30,8 +30,38 @@ export function AccountProfile() {
   const [editCity, setEditCity] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   if (!user) return null;
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Supprimer mon compte ?",
+      "Action définitive. Ton profil et ton compte de connexion seront supprimés. Tes commandes passées seront dissociées de ton compte.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await apiDeleteOwnAccount();
+              await logout();
+              router.replace("/");
+            } catch (e) {
+              Alert.alert(
+                "Échec",
+                e instanceof Error ? e.message : "La suppression a échoué. Réessaie ou écris à contact@lumoo.ml.",
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
 
@@ -200,6 +230,26 @@ export function AccountProfile() {
         <LogOut size={18} color="#DC2626" />
         <Text className="ml-2 font-display-semibold text-red-600">Se déconnecter</Text>
       </Pressable>
+
+      {/* Suppression de compte (exigence Google Play / RGPD) */}
+      {user.role !== "admin" ? (
+        <Pressable
+          onPress={confirmDelete}
+          disabled={deleting}
+          accessibilityRole="button"
+          accessibilityLabel="Supprimer mon compte"
+          className="mt-3 h-12 flex-row items-center justify-center rounded-2xl active:opacity-70"
+        >
+          {deleting ? (
+            <ActivityIndicator color="#9CA3AF" />
+          ) : (
+            <>
+              <Trash2 size={16} color="#9CA3AF" />
+              <Text className="ml-2 font-body-semibold text-gray-400">Supprimer mon compte</Text>
+            </>
+          )}
+        </Pressable>
+      ) : null}
 
       <Text className="mt-8 text-center text-xs text-gray-300">Lumoo — Mali</Text>
     </ScrollView>

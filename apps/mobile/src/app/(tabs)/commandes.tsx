@@ -69,20 +69,46 @@ export default function CommandesScreen() {
         <View className="h-20 w-20 items-center justify-center rounded-full bg-green-50">
           <ShoppingBag size={40} color="#16a34a" />
         </View>
-        <Text className="mt-4 font-display text-lg text-gray-800">
-          Aucune commande pour l&apos;instant
-        </Text>
-        <Text className="mt-1 text-center font-body text-gray-500">
-          Parcours le catalogue et passe ta première commande.
-        </Text>
-        <Pressable
-          onPress={() => router.replace("/catalogue")}
-          accessibilityRole="button"
-          style={CARD_SHADOW}
-          className="mt-6 h-12 items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
-        >
-          <Text className="font-display-semibold text-white">Découvrir le catalogue</Text>
-        </Pressable>
+        {user ? (
+          <>
+            <Text className="mt-4 font-display text-lg text-gray-800">
+              Aucune commande pour l&apos;instant
+            </Text>
+            <Text className="mt-1 text-center font-body text-gray-500">
+              Parcours le catalogue et passe ta première commande.
+            </Text>
+            <Pressable
+              onPress={() => router.replace("/catalogue")}
+              accessibilityRole="button"
+              style={CARD_SHADOW}
+              className="mt-6 h-12 items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
+            >
+              <Text className="font-display-semibold text-white">Découvrir le catalogue</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text className="mt-4 font-display text-lg text-gray-800">Suivre une commande</Text>
+            <Text className="mt-1 text-center font-body text-gray-500">
+              Entre ton numéro de commande et ton code de livraison — pas besoin de compte.
+            </Text>
+            <Pressable
+              onPress={() => router.push("/suivi")}
+              accessibilityRole="button"
+              style={CARD_SHADOW}
+              className="mt-6 h-12 w-full items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
+            >
+              <Text className="font-display-semibold text-white">📍 Suivre ma commande</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.replace("/catalogue")}
+              accessibilityRole="button"
+              className="mt-3 h-12 w-full items-center justify-center rounded-2xl bg-gray-100 px-6 active:opacity-80"
+            >
+              <Text className="font-body-semibold text-gray-700">Voir le catalogue</Text>
+            </Pressable>
+          </>
+        )}
       </View>
     );
   }

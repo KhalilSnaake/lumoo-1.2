@@ -1,6 +1,6 @@
 import { Tabs, router } from "expo-router";
 import { Pressable, View } from "react-native";
-import { Home, LayoutGrid, MessageCircle, ShoppingCart, User } from "lucide-react-native";
+import { Home, LayoutGrid, MessageCircle, Package, ShoppingCart, User } from "lucide-react-native";
 import { useCart } from "@lumoo/core";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/notification-bell";
@@ -61,6 +61,13 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <ShoppingCart color={color} size={size} />,
           tabBarBadge: totalItems > 0 ? totalItems : undefined,
           tabBarBadgeStyle: { backgroundColor: "#EF4444", color: "#ffffff" },
+        }}
+      />
+      <Tabs.Screen
+        name="commandes"
+        options={{
+          title: "Commandes",
+          tabBarIcon: ({ color, size }) => <Package color={color} size={size} />,
         }}
       />
       <Tabs.Screen

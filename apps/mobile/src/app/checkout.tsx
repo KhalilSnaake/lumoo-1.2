@@ -4,7 +4,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Check, ChevronLeft, Copy } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
-import { useCart, useOrders, useAuth, apiGetPaymentMethods, type PaymentMethod, type PaymentMethodConfig } from "@lumoo/core";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import { useCart, useOrders, useAuth, apiGetPaymentMethods, type PaymentMethod, type PaymentMethodConfig, type PaymentMethodType } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
 import { LocationPicker } from "@/components/LocationPicker";
@@ -24,12 +26,26 @@ const PM_LOGOS: Record<PaymentMethod, ReactNode> = {
   wave: <WaveLogo />,
   livraison: <CashLogo />,
 };
-const PM_DEFAULT: { id: PaymentMethod; name: string; desc: string }[] = [
-  { id: "orange_money", name: "Orange Money", desc: "Payez avec Orange Money" },
-  { id: "moov_money", name: "Moov Money", desc: "Payez avec Moov Money" },
-  { id: "wave", name: "Wave", desc: "Payez avec Wave" },
-  { id: "livraison", name: "Paiement à la livraison", desc: "Payez en espèces à la réception" },
+const PM_DEFAULT: { id: PaymentMethod; name: string; desc: string; type: PaymentMethodType; payUrl: string | null }[] = [
+  { id: "orange_money", name: "Orange Money", desc: "Payez avec Orange Money", type: "manual", payUrl: null },
+  { id: "moov_money", name: "Moov Money", desc: "Payez avec Moov Money", type: "manual", payUrl: null },
+  { id: "wave", name: "Wave", desc: "Payez avec Wave", type: "manual", payUrl: null },
+  { id: "livraison", name: "Paiement à la livraison", desc: "Payez en espèces à la réception", type: "cash", payUrl: null },
 ];
+
+// Paiement en ligne (type 'link') : ouvre la page de paiement hébergée dans le
+// navigateur SYSTÈME (sécurisé, pas une WebView) et récupère le résultat via le
+// retour deep link. La logique vit côté serveur (pay_url) → nouveau fournisseur =
+// aucune nouvelle build. Dormant tant qu'aucune pay_url n'est définie en base.
+async function runHostedPayment(payUrl: string, orderId: string, amount: number): Promise<boolean> {
+  const returnUrl = Linking.createURL("payment-return");
+  const sep = payUrl.includes("?") ? "&" : "?";
+  const url = `${payUrl}${sep}order=${encodeURIComponent(orderId)}&amount=${amount}&return=${encodeURIComponent(returnUrl)}`;
+  const result = await WebBrowser.openAuthSessionAsync(url, returnUrl);
+  if (result.type !== "success" || !result.url) return false; // annulé / fermé
+  const status = Linking.parse(result.url).queryParams?.status;
+  return status === "success" || status === "ok" || status === "paid";
+}
 
 const STEP_ORDER: Step[] = ["livraison", "paiement", "confirmation"];
 const TITLES: Record<Step, string> = { livraison: "Livraison", paiement: "Paiement", confirmation: "Confirmation" };
@@ -72,12 +88,13 @@ export default function CheckoutScreen() {
 
   const payments = (
     pmConfig.length
-      ? pmConfig.filter((m) => m.enabled).map((m) => ({ id: m.id, name: m.label, desc: m.description }))
+      ? pmConfig.filter((m) => m.enabled).map((m) => ({ id: m.id, name: m.label, desc: m.description, type: m.type, payUrl: m.payUrl }))
       : PM_DEFAULT
   ).map((m) => ({ ...m, logo: PM_LOGOS[m.id] }));
+  const selected = payments.find((p) => p.id === paymentMethod);
 
   const canProceed = !!(name && phone && address && city);
-  const canPay = !!paymentMethod && (paymentMethod === "livraison" || !!paymentPhone);
+  const canPay = !!paymentMethod && (selected?.type !== "manual" || !!paymentPhone);
 
   const goBack = () => {
     if (step === "paiement") setStep("livraison");
@@ -103,6 +120,16 @@ export default function CheckoutScreen() {
       });
       setOrderId(order.id);
       setDeliveryCode(order.deliveryCode);
+
+      // Paiement en ligne (type 'link') : page hébergée + retour deep link sécurisé.
+      if (selected?.type === "link" && selected.payUrl) {
+        const paid = await runHostedPayment(selected.payUrl, order.id, order.totalPrice ?? totalPrice);
+        if (!paid) {
+          setError("Le paiement n'a pas été confirmé. Réessaie ou choisis un autre mode.");
+          return;
+        }
+      }
+
       // Persistance locale : permet de re-suivre la commande sans compte (surtout les invités).
       void saveRecentOrder({
         id: order.id,
@@ -199,7 +226,7 @@ export default function CheckoutScreen() {
                 </View>
               </Pressable>
             ))}
-            {paymentMethod && paymentMethod !== "livraison" ? (
+            {selected?.type === "manual" ? (
               <MaliPhoneInput value={paymentPhone} onChange={setPaymentPhone} label="Numéro de paiement *" />
             ) : null}
             {error ? <Text className="text-center font-body text-sm text-red-600">{error}</Text> : null}
@@ -208,7 +235,7 @@ export default function CheckoutScreen() {
                 <ActivityIndicator color="#ffffff" />
               ) : (
                 <Text className="font-display-semibold text-white">
-                  {paymentMethod === "livraison" ? "Confirmer la commande" : `Payer ${formatFCFA(totalPrice)}`}
+                  {selected?.type === "cash" ? "Confirmer la commande" : `Payer ${formatFCFA(totalPrice)}`}
                 </Text>
               )}
             </Pressable>

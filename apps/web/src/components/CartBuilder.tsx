@@ -115,7 +115,6 @@ export default function CartBuilder() {
   };
 
   const canProceedToPayment = name && phone && address && city;
-  const canPay = paymentMethod && (paymentMethod === 'livraison' || paymentPhone);
 
   const handlePayment = async () => {
     const supabase = getSupabase();
@@ -134,6 +133,14 @@ export default function CartBuilder() {
         paymentMethod: paymentMethod as PaymentMethod,
         paymentPhone,
       });
+
+      // Paiement en ligne (type 'link') : redirige vers la page de paiement hébergée
+      // (dormant tant qu'aucune pay_url n'est définie en base).
+      if (selectedMethod?.type === 'link' && selectedMethod.payUrl) {
+        const sep = selectedMethod.payUrl.includes('?') ? '&' : '?';
+        window.location.href = `${selectedMethod.payUrl}${sep}order=${encodeURIComponent(order.id)}&amount=${totalPrice}&return=${encodeURIComponent(window.location.origin)}`;
+        return;
+      }
 
       // Notify Admins
       const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
@@ -181,17 +188,21 @@ export default function CartBuilder() {
     livraison: <CashLogo />,
   };
   const PM_DEFAULT = [
-    { id: 'orange_money' as PaymentMethod, label: 'Orange Money', description: 'Payez avec votre compte Orange Money' },
-    { id: 'moov_money' as PaymentMethod, label: 'Moov Money', description: 'Payez avec votre compte Moov Money' },
-    { id: 'wave' as PaymentMethod, label: 'Wave', description: 'Payez avec votre compte Wave' },
-    { id: 'livraison' as PaymentMethod, label: 'Paiement à la livraison', description: 'Payez en espèces à la réception' },
+    { id: 'orange_money' as PaymentMethod, label: 'Orange Money', description: 'Payez avec votre compte Orange Money', type: 'manual', payUrl: null },
+    { id: 'moov_money' as PaymentMethod, label: 'Moov Money', description: 'Payez avec votre compte Moov Money', type: 'manual', payUrl: null },
+    { id: 'wave' as PaymentMethod, label: 'Wave', description: 'Payez avec votre compte Wave', type: 'manual', payUrl: null },
+    { id: 'livraison' as PaymentMethod, label: 'Paiement à la livraison', description: 'Payez en espèces à la réception', type: 'cash', payUrl: null },
   ];
   const paymentMethods = (pmConfig.length ? pmConfig.filter(m => m.enabled) : PM_DEFAULT).map(m => ({
     id: m.id,
     name: m.label,
     icon: PM_LOGOS[m.id],
     desc: m.description,
+    type: m.type,
+    payUrl: m.payUrl,
   }));
+  const selectedMethod = paymentMethods.find(m => m.id === paymentMethod);
+  const canPay = !!paymentMethod && (selectedMethod?.type !== 'manual' || !!paymentPhone);
 
   if (!isCartBuilderOpen) return null;
 
@@ -400,14 +411,14 @@ export default function CartBuilder() {
                 </button>
               ))}
             </div>
-            {paymentMethod && paymentMethod !== 'livraison' && (
+            {selectedMethod?.type === 'manual' && (
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Numéro de paiement *</label>
                 <MaliPhoneInput value={paymentPhone} onChange={setPaymentPhone} required />
               </div>
             )}
             <button onClick={handlePayment} disabled={!canPay || isSubmitting} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
-              {isSubmitting ? 'Traitement...' : paymentMethod === 'livraison' ? 'Confirmer la commande' : `Payer ${formatPrice(totalPrice)} F`}
+              {isSubmitting ? 'Traitement...' : selectedMethod?.type === 'cash' ? 'Confirmer la commande' : `Payer ${formatPrice(totalPrice)} F`}
             </button>
           </div>
         )}

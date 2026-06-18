@@ -7,10 +7,11 @@ import {
   useProducts,
   useCategories,
   getSupabase,
+  apiGetPaymentMethods,
 } from '@lumoo/core';
-import type { PaymentMethod, Product } from '@lumoo/core';
+import type { PaymentMethod, PaymentMethodConfig, Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
-import { OrangeMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
+import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import ProductModal from './ProductModal';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
@@ -43,6 +44,7 @@ export default function CartBuilder() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [createdOrderId, setCreatedOrderId] = useState('');
+  const [pmConfig, setPmConfig] = useState<PaymentMethodConfig[]>([]);
   const [createdDeliveryCode, setCreatedDeliveryCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -168,11 +170,28 @@ export default function CartBuilder() {
     }, 300);
   };
 
-  const paymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', icon: <OrangeMoneyLogo />, desc: 'Payez avec votre compte Orange Money' },
-    { id: 'wave', name: 'Wave', icon: <WaveLogo />, desc: 'Payez avec votre compte Wave' },
-    { id: 'livraison', name: 'Paiement à la livraison', icon: <CashLogo />, desc: 'Payez en espèces à la réception' },
+  // Méthodes de paiement : config admin (n'affiche que les `enabled`), avec repli
+  // sur la liste par défaut si la table `payment_methods` n'existe pas encore.
+  useEffect(() => { apiGetPaymentMethods().then(setPmConfig); }, []);
+
+  const PM_LOGOS = {
+    orange_money: <OrangeMoneyLogo />,
+    moov_money: <MoovMoneyLogo />,
+    wave: <WaveLogo />,
+    livraison: <CashLogo />,
+  };
+  const PM_DEFAULT = [
+    { id: 'orange_money' as PaymentMethod, label: 'Orange Money', description: 'Payez avec votre compte Orange Money' },
+    { id: 'moov_money' as PaymentMethod, label: 'Moov Money', description: 'Payez avec votre compte Moov Money' },
+    { id: 'wave' as PaymentMethod, label: 'Wave', description: 'Payez avec votre compte Wave' },
+    { id: 'livraison' as PaymentMethod, label: 'Paiement à la livraison', description: 'Payez en espèces à la réception' },
   ];
+  const paymentMethods = (pmConfig.length ? pmConfig.filter(m => m.enabled) : PM_DEFAULT).map(m => ({
+    id: m.id,
+    name: m.label,
+    icon: PM_LOGOS[m.id],
+    desc: m.description,
+  }));
 
   if (!isCartBuilderOpen) return null;
 

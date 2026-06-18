@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Check, ChevronLeft, Copy } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
-import { useCart, useOrders, useAuth, type PaymentMethod } from "@lumoo/core";
+import { useCart, useOrders, useAuth, apiGetPaymentMethods, type PaymentMethod, type PaymentMethodConfig } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
 import { LocationPicker } from "@/components/LocationPicker";
@@ -18,11 +18,17 @@ function formatFCFA(n: number) {
 
 type Step = "livraison" | "paiement" | "confirmation";
 
-const PAYMENTS: { id: PaymentMethod; name: string; desc: string; logo: ReactNode }[] = [
-  { id: "orange_money", name: "Orange Money", desc: "Payez avec Orange Money", logo: <OrangeMoneyLogo /> },
-  { id: "moov_money", name: "Moov Money", desc: "Payez avec Moov Money", logo: <MoovMoneyLogo /> },
-  { id: "wave", name: "Wave", desc: "Payez avec Wave", logo: <WaveLogo /> },
-  { id: "livraison", name: "Paiement à la livraison", desc: "Payez en espèces à la réception", logo: <CashLogo /> },
+const PM_LOGOS: Record<PaymentMethod, ReactNode> = {
+  orange_money: <OrangeMoneyLogo />,
+  moov_money: <MoovMoneyLogo />,
+  wave: <WaveLogo />,
+  livraison: <CashLogo />,
+};
+const PM_DEFAULT: { id: PaymentMethod; name: string; desc: string }[] = [
+  { id: "orange_money", name: "Orange Money", desc: "Payez avec Orange Money" },
+  { id: "moov_money", name: "Moov Money", desc: "Payez avec Moov Money" },
+  { id: "wave", name: "Wave", desc: "Payez avec Wave" },
+  { id: "livraison", name: "Paiement à la livraison", desc: "Payez en espèces à la réception" },
 ];
 
 const STEP_ORDER: Step[] = ["livraison", "paiement", "confirmation"];
@@ -47,6 +53,7 @@ export default function CheckoutScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pmConfig, setPmConfig] = useState<PaymentMethodConfig[]>([]);
 
   // Pré-remplir nom + téléphone depuis le profil quand l'utilisateur est connecté
   useEffect(() => {
@@ -57,6 +64,17 @@ export default function CheckoutScreen() {
       setCity((prev) => prev || user.city || "");
     }
   }, [user]);
+
+  // Méthodes de paiement : config admin (n'affiche que les `enabled`), repli sur PM_DEFAULT.
+  useEffect(() => {
+    apiGetPaymentMethods().then(setPmConfig);
+  }, []);
+
+  const payments = (
+    pmConfig.length
+      ? pmConfig.filter((m) => m.enabled).map((m) => ({ id: m.id, name: m.label, desc: m.description }))
+      : PM_DEFAULT
+  ).map((m) => ({ ...m, logo: PM_LOGOS[m.id] }));
 
   const canProceed = !!(name && phone && address && city);
   const canPay = !!paymentMethod && (paymentMethod === "livraison" || !!paymentPhone);
@@ -172,7 +190,7 @@ export default function CheckoutScreen() {
         {step === "paiement" ? (
           <View className="gap-3">
             <Text className="text-center font-display text-lg text-ink">Mode de paiement</Text>
-            {PAYMENTS.map((m) => (
+            {payments.map((m) => (
               <Pressable key={m.id} onPress={() => setPaymentMethod(m.id)} accessibilityRole="button" accessibilityState={{ selected: paymentMethod === m.id }} className={`flex-row items-center gap-3 rounded-2xl border-2 bg-white p-4 ${paymentMethod === m.id ? "border-brand" : "border-gray-100"}`}>
                 {m.logo}
                 <View className="flex-1">

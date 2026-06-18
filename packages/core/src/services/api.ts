@@ -1,4 +1,4 @@
-import { Order, OrderStatus, CreateOrderInput } from '../types';
+import { Order, OrderStatus, CreateOrderInput, PaymentMethod } from '../types';
 import { getSupabase } from '../lib/supabaseClient';
 
 function generateOrderId(): string {
@@ -328,4 +328,48 @@ export async function apiGetStats(): Promise<DashboardStats> {
     todayRevenue,
     byStatus,
   };
+}
+
+// ─── Méthodes de paiement (config pilotée par l'admin) ───
+
+export type PaymentMethodConfig = {
+  id: PaymentMethod;
+  label: string;
+  description: string;
+  enabled: boolean;
+  sortOrder: number;
+};
+
+// Toutes les méthodes, triées. Le checkout filtre `enabled` ; l'admin voit tout.
+// Lecture publique (RLS) → disponible aussi pour l'invité. Renvoie [] si la table
+// n'existe pas encore → l'UI bascule alors sur sa liste par défaut (pas de casse).
+export async function apiGetPaymentMethods(): Promise<PaymentMethodConfig[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('payment_methods')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error || !data) return [];
+  return data.map((r: any) => ({
+    id: r.id as PaymentMethod,
+    label: r.label,
+    description: r.description ?? '',
+    enabled: !!r.enabled,
+    sortOrder: r.sort_order ?? 0,
+  }));
+}
+
+// Mise à jour d'une méthode (admin uniquement, verrouillé par la RLS).
+export async function apiUpdatePaymentMethod(
+  id: PaymentMethod,
+  updates: Partial<Omit<PaymentMethodConfig, 'id'>>,
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const patch: any = {};
+  if (updates.label !== undefined) patch.label = updates.label;
+  if (updates.description !== undefined) patch.description = updates.description;
+  if (updates.enabled !== undefined) patch.enabled = updates.enabled;
+  if (updates.sortOrder !== undefined) patch.sort_order = updates.sortOrder;
+  const { error } = await supabase.from('payment_methods').update(patch).eq('id', id);
+  return !error;
 }

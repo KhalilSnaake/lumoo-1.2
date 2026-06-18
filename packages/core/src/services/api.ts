@@ -332,12 +332,17 @@ export async function apiGetStats(): Promise<DashboardStats> {
 
 // ─── Méthodes de paiement (config pilotée par l'admin) ───
 
+// 'cash' = à la livraison · 'manual' = numéro + WhatsApp · 'link' = page de paiement hébergée (pay_url)
+export type PaymentMethodType = 'cash' | 'manual' | 'link';
+
 export type PaymentMethodConfig = {
   id: PaymentMethod;
   label: string;
   description: string;
   enabled: boolean;
   sortOrder: number;
+  type: PaymentMethodType;
+  payUrl: string | null;
 };
 
 // Toutes les méthodes, triées. Le checkout filtre `enabled` ; l'admin voit tout.
@@ -356,6 +361,8 @@ export async function apiGetPaymentMethods(): Promise<PaymentMethodConfig[]> {
     description: r.description ?? '',
     enabled: !!r.enabled,
     sortOrder: r.sort_order ?? 0,
+    type: (r.type ?? 'manual') as PaymentMethodType,
+    payUrl: r.pay_url ?? null,
   }));
 }
 
@@ -370,6 +377,8 @@ export async function apiUpdatePaymentMethod(
   if (updates.description !== undefined) patch.description = updates.description;
   if (updates.enabled !== undefined) patch.enabled = updates.enabled;
   if (updates.sortOrder !== undefined) patch.sort_order = updates.sortOrder;
+  if (updates.type !== undefined) patch.type = updates.type;
+  if (updates.payUrl !== undefined) patch.pay_url = updates.payUrl;
   const { error } = await supabase.from('payment_methods').update(patch).eq('id', id);
   return !error;
 }

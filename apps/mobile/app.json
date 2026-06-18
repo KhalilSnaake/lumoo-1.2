@@ -3,6 +3,12 @@
     "name": "Lumoo",
     "slug": "lumoo",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fc31e4b2-89be-4aa9-84b0-866a6e8df670"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "lumoo",

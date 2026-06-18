@@ -10,7 +10,7 @@ import {
   apiGetPaymentMethods,
   apiUpdatePaymentMethod,
 } from '@lumoo/core';
-import type { Order, OrderStatus, PaymentMethod, PaymentMethodConfig, Product, Ad, AdPosition, ContactMessage, User, UserRole } from '@lumoo/core';
+import type { Order, OrderStatus, PaymentMethod, PaymentMethodConfig, PaymentMethodType, Product, Ad, AdPosition, ContactMessage, User, UserRole } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import { useContactMessages } from '../context/ContactMessagesContext';
 import Logo from './Logo';
@@ -138,7 +138,6 @@ export default function AdminPanel({ onClose, initialOrderId }: { onClose: () =>
 }
 
 function PaiementsTab() {
-  const { showToast } = useToast();
   const [methods, setMethods] = useState<PaymentMethodConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -148,18 +147,11 @@ function PaiementsTab() {
   };
   useEffect(() => { load(); }, []);
 
-  const toggle = async (m: PaymentMethodConfig) => {
-    setMethods(prev => prev.map(x => x.id === m.id ? { ...x, enabled: !x.enabled } : x));
-    const ok = await apiUpdatePaymentMethod(m.id, { enabled: !m.enabled });
-    if (!ok) { showToast('Échec de la mise à jour.', 'error'); load(); }
-    else showToast(`${m.label} ${!m.enabled ? 'activée' : 'désactivée'}`);
-  };
-
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-800">Méthodes de paiement</h2>
-        <p className="text-sm text-gray-400 mt-1">Active ou désactive ce qui s'affiche au checkout (web + mobile). Effet immédiat, sans redéploiement.</p>
+        <p className="text-sm text-gray-400 mt-1">Active/désactive et configure ce qui s'affiche au checkout (web + mobile). Effet immédiat, sans redéploiement.</p>
       </div>
       {loading ? (
         <p className="text-gray-400">Chargement…</p>
@@ -169,29 +161,100 @@ function PaiementsTab() {
         </div>
       ) : (
         <div className="space-y-3">
-          {methods.map(m => (
-            <div key={m.id} className="flex items-center justify-between bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">{paymentLogos[m.id]}</div>
-                <div className="min-w-0">
-                  <p className="font-bold text-gray-800 truncate">{m.label}</p>
-                  <p className="text-xs text-gray-400 truncate">{m.description}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => toggle(m)}
-                role="switch"
-                aria-checked={m.enabled}
-                aria-label={`${m.enabled ? 'Désactiver' : 'Activer'} ${m.label}`}
-                className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${m.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${m.enabled ? 'translate-x-5' : ''}`} />
-              </button>
-            </div>
-          ))}
+          {methods.map(m => <PaymentRow key={m.id} method={m} onChanged={load} />)}
           {methods.filter(m => m.enabled).length === 0 && (
             <p className="text-sm text-red-600 font-semibold">⚠️ Aucune méthode active : le checkout n'affichera aucune option de paiement.</p>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PaymentRow({ method, onChanged }: { method: PaymentMethodConfig; onChanged: () => void }) {
+  const { showToast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [label, setLabel] = useState(method.label);
+  const [description, setDescription] = useState(method.description);
+  const [type, setType] = useState<PaymentMethodType>(method.type);
+  const [payUrl, setPayUrl] = useState(method.payUrl ?? '');
+  const [sortOrder, setSortOrder] = useState(String(method.sortOrder));
+
+  const typeLabel = method.type === 'link' ? '🔗 Paiement en ligne' : method.type === 'cash' ? '💵 À la livraison' : '📱 Numéro + WhatsApp';
+  const inputCls = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none';
+
+  const toggle = async () => {
+    const ok = await apiUpdatePaymentMethod(method.id, { enabled: !method.enabled });
+    if (!ok) showToast('Échec de la mise à jour.', 'error');
+    else { showToast(`${method.label} ${!method.enabled ? 'activée' : 'désactivée'}`); onChanged(); }
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const ok = await apiUpdatePaymentMethod(method.id, {
+      label: label.trim() || method.label,
+      description: description.trim(),
+      type,
+      payUrl: payUrl.trim() || null,
+      sortOrder: Number(sortOrder) || 0,
+    });
+    setSaving(false);
+    if (!ok) { showToast("Échec de l'enregistrement.", 'error'); return; }
+    showToast('Enregistré ✅'); setEditing(false); onChanged();
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">{paymentLogos[method.id]}</div>
+          <div className="min-w-0">
+            <p className="font-bold text-gray-800 truncate">{method.label}</p>
+            <p className="text-xs text-gray-400 truncate">{typeLabel}{method.description ? ` · ${method.description}` : ''}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button onClick={() => setEditing(e => !e)} className="text-xs font-bold text-gray-500 hover:text-green-600 transition-colors">{editing ? 'Fermer' : 'Éditer'}</button>
+          <button onClick={toggle} role="switch" aria-checked={method.enabled} aria-label={`${method.enabled ? 'Désactiver' : 'Activer'} ${method.label}`} className={`relative w-12 h-7 rounded-full transition-colors ${method.enabled ? 'bg-green-500' : 'bg-gray-300'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${method.enabled ? 'translate-x-5' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {editing && (
+        <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Nom affiché</label>
+            <input value={label} onChange={e => setLabel(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Description</label>
+            <input value={description} onChange={e => setDescription(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label>
+            <select value={type} onChange={e => setType(e.target.value as PaymentMethodType)} className={inputCls}>
+              <option value="cash">À la livraison (espèces)</option>
+              <option value="manual">Numéro + WhatsApp</option>
+              <option value="link">Page de paiement en ligne</option>
+            </select>
+          </div>
+          {type === 'link' && (
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">URL de paiement (pay_url)</label>
+              <input value={payUrl} onChange={e => setPayUrl(e.target.value)} placeholder="https://…" className={inputCls} />
+              <p className="text-[10px] text-amber-600 mt-1">⚠️ Page de paiement hébergée que tu contrôles. Le mobile l'ouvre dans un navigateur sécurisé. À renseigner seulement quand tu as un vrai fournisseur.</p>
+            </div>
+          )}
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Ordre d'affichage</label>
+            <input type="number" value={sortOrder} onChange={e => setSortOrder(e.target.value)} className={inputCls} />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setEditing(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl text-sm hover:bg-gray-200 transition-colors">Annuler</button>
+            <button onClick={save} disabled={saving} className="flex-1 py-2.5 bg-green-600 text-white font-bold rounded-xl text-sm hover:bg-green-700 disabled:opacity-50 transition-colors">{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+          </div>
         </div>
       )}
     </div>

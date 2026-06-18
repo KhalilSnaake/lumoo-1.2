@@ -37,6 +37,12 @@ const PM_DEFAULT: { id: PaymentMethod; name: string; desc: string; type: Payment
 // navigateur SYSTÈME (sécurisé, pas une WebView) et récupère le résultat via le
 // retour deep link. La logique vit côté serveur (pay_url) → nouveau fournisseur =
 // aucune nouvelle build. Dormant tant qu'aucune pay_url n'est définie en base.
+//
+// ⚠️ SÉCURITÉ — AVANT TOUT VRAI PAIEMENT : ne JAMAIS faire confiance au `status`
+// du retour (il est forgeable : lumoo://payment-return?status=success). Le vrai
+// "payé" doit venir d'un WEBHOOK fournisseur (authentifié) qui marque la commande
+// en base ; ici on devra alors RE-VÉRIFIER la commande en base, pas croire l'URL.
+// Le montant doit aussi être recalculé côté serveur (pas l'`amount` du client).
 async function runHostedPayment(payUrl: string, orderId: string, amount: number): Promise<boolean> {
   const returnUrl = Linking.createURL("payment-return");
   const sep = payUrl.includes("?") ? "&" : "?";

@@ -7,8 +7,10 @@ import {
   useNotifications,
   useCategories,
   getSupabase,
+  apiGetPaymentMethods,
+  apiUpdatePaymentMethod,
 } from '@lumoo/core';
-import type { Order, OrderStatus, PaymentMethod, Product, Ad, AdPosition, ContactMessage, User, UserRole } from '@lumoo/core';
+import type { Order, OrderStatus, PaymentMethod, PaymentMethodConfig, Product, Ad, AdPosition, ContactMessage, User, UserRole } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import { useContactMessages } from '../context/ContactMessagesContext';
 import Logo from './Logo';
@@ -70,7 +72,7 @@ const roleLabels: Record<UserRole, { label: string; emoji: string; color: string
 // roleLabels is used in tabs to display user lists
 void roleLabels;
 
-type Tab = 'dashboard' | 'commandes' | 'produits' | 'utilisateurs' | 'livreurs' | 'publicites' | 'messages';
+type Tab = 'dashboard' | 'commandes' | 'produits' | 'utilisateurs' | 'livreurs' | 'publicites' | 'messages' | 'paiements';
 
 const tabs: { key: Tab; label: string; emoji: string }[] = [
   { key: 'dashboard', label: 'Dashboard', emoji: '📊' },
@@ -80,6 +82,7 @@ const tabs: { key: Tab; label: string; emoji: string }[] = [
   { key: 'messages', label: 'Messages', emoji: '💬' },
   { key: 'utilisateurs', label: 'Utilisateurs', emoji: '👥' },
   { key: 'livreurs', label: 'Livreurs', emoji: '🛵' },
+  { key: 'paiements', label: 'Paiements', emoji: '💳' },
 ];
 
 export default function AdminPanel({ onClose, initialOrderId }: { onClose: () => void; initialOrderId?: string }) {
@@ -128,7 +131,69 @@ export default function AdminPanel({ onClose, initialOrderId }: { onClose: () =>
         {activeTab === 'messages' && <MessagesTab />}
         {activeTab === 'utilisateurs' && <UtilisateursTab />}
         {activeTab === 'livreurs' && <LivreursTab />}
+        {activeTab === 'paiements' && <PaiementsTab />}
       </div>
+    </div>
+  );
+}
+
+function PaiementsTab() {
+  const { showToast } = useToast();
+  const [methods, setMethods] = useState<PaymentMethodConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    apiGetPaymentMethods().then((m) => { setMethods(m); setLoading(false); });
+  };
+  useEffect(() => { load(); }, []);
+
+  const toggle = async (m: PaymentMethodConfig) => {
+    setMethods(prev => prev.map(x => x.id === m.id ? { ...x, enabled: !x.enabled } : x));
+    const ok = await apiUpdatePaymentMethod(m.id, { enabled: !m.enabled });
+    if (!ok) { showToast('Échec de la mise à jour.', 'error'); load(); }
+    else showToast(`${m.label} ${!m.enabled ? 'activée' : 'désactivée'}`);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-gray-800">Méthodes de paiement</h2>
+        <p className="text-sm text-gray-400 mt-1">Active ou désactive ce qui s'affiche au checkout (web + mobile). Effet immédiat, sans redéploiement.</p>
+      </div>
+      {loading ? (
+        <p className="text-gray-400">Chargement…</p>
+      ) : methods.length === 0 ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-700">
+          La table <code className="font-mono">payment_methods</code> n'existe pas encore. Lance le SQL fourni, puis reviens ici.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {methods.map(m => (
+            <div key={m.id} className="flex items-center justify-between bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">{paymentLogos[m.id]}</div>
+                <div className="min-w-0">
+                  <p className="font-bold text-gray-800 truncate">{m.label}</p>
+                  <p className="text-xs text-gray-400 truncate">{m.description}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => toggle(m)}
+                role="switch"
+                aria-checked={m.enabled}
+                aria-label={`${m.enabled ? 'Désactiver' : 'Activer'} ${m.label}`}
+                className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${m.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${m.enabled ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
+          ))}
+          {methods.filter(m => m.enabled).length === 0 && (
+            <p className="text-sm text-red-600 font-semibold">⚠️ Aucune méthode active : le checkout n'affichera aucune option de paiement.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

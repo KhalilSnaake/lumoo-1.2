@@ -70,5 +70,11 @@ Exécutez les fichiers SQL suivants dans votre SQL Editor :
 
 **Note** : Créez un bucket public nommé `images` dans Supabase Storage pour les photos.
 
+## 📚 Documentation interne
+Mémoire « anti-galère » du projet — **à consulter avant de débugger un sujet déjà touché** :
+- [`docs/JOURNAL.md`](docs/JOURNAL.md) — journal d'erreurs (symptôme → cause racine → fix → **prévention**).
+- [`docs/features/`](docs/features/) — runbooks par système complexe (état réel + débug + extension), ex. [notifications](docs/features/notifications.md).
+- [`docs/superpowers/plans/`](docs/superpowers/) — plans d'implémentation datés (ce qui *était à faire*).
+
 ## 📄 Licence
 Propriété de KhalilSnaake - Lumoo App.

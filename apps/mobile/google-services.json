@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "607296592066",
+    "project_id": "lumoo-1010a",
+    "storage_bucket": "lumoo-1010a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:607296592066:android:02d5e3715451b73258035b",
+        "android_client_info": {
+          "package_name": "ml.lumoo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrVjWMeIwDoGW_CH9T24_tajh8ounRU9Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

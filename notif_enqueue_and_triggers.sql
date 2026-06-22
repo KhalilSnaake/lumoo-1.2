@@ -98,3 +98,13 @@ BEGIN
 END; $$;
 DROP TRIGGER IF EXISTS contact_notify_ins ON contact_messages;
 CREATE TRIGGER contact_notify_ins AFTER INSERT ON contact_messages FOR EACH ROW EXECUTE FUNCTION trg_contact_notify();
+
+-- ── Durcissement sécurité ──
+-- enqueue_notification est SECURITY DEFINER : un client ne doit JAMAIS l'appeler directement
+-- (sinon il forgerait des notifs in-app + des pushs). Les triggers l'appellent en interne
+-- (en tant que définisseur), donc ce REVOKE ne casse rien.
+REVOKE EXECUTE ON FUNCTION enqueue_notification(uuid,text,text,text,text,text,text)
+  FROM PUBLIC, anon, authenticated;
+
+-- Aucun client ne doit insérer de notifications : seuls les triggers (définisseur) le font.
+DROP POLICY IF EXISTS "notifications_insert_any" ON public.notifications;

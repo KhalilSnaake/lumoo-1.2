@@ -13,6 +13,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from "@/components/PaymentLogos";
 import { openOrder } from "@/lib/whatsapp";
 import { saveRecentOrder } from "@/lib/recent-orders";
+import { getDeviceId } from "@/lib/device-id";
 
 function formatFCFA(n: number) {
   return `${n.toLocaleString("fr-FR")} FCFA`;
@@ -112,8 +113,10 @@ export default function CheckoutScreen() {
     setSubmitting(true);
     setError(null);
     try {
+      const deviceId = await getDeviceId();
       const order = await createOrder({
         userId: user?.id,
+        deviceId,
         items,
         customerName: name,
         customerPhone: phone,

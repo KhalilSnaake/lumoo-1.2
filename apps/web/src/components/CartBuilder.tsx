@@ -3,10 +3,8 @@ import {
   useCart,
   useOrders,
   useAuth,
-  useNotifications,
   useProducts,
   useCategories,
-  getSupabase,
   apiGetPaymentMethods,
 } from '@lumoo/core';
 import type { PaymentMethod, PaymentMethodConfig, Product } from '@lumoo/core';
@@ -27,7 +25,6 @@ export default function CartBuilder() {
   } = useCart();
   const { createOrder } = useOrders();
   const { user } = useAuth();
-  const { createNotification } = useNotifications();
   const { showToast } = useToast();
 
   const [filter, setFilter] = useState<CategoryFilter>('all');
@@ -117,7 +114,6 @@ export default function CartBuilder() {
   const canProceedToPayment = name && phone && address && city;
 
   const handlePayment = async () => {
-    const supabase = getSupabase();
     if (!paymentMethod) return;
     setIsSubmitting(true);
     try {
@@ -142,19 +138,7 @@ export default function CartBuilder() {
         return;
       }
 
-      // Notify Admins
-      const { data: admins } = await supabase.from('users').select('id').eq('role', 'admin');
-      if (admins) {
-        for (const admin of admins) {
-          await createNotification({
-            userId: admin.id,
-            title: '📦 Nouvelle commande !',
-            message: `Une commande de ${formatPrice(totalPrice)} F vient d'être passée par ${name}.`,
-            type: 'new_order',
-            orderId: order.id
-          });
-        }
-      }
+      // Notif admin "nouvelle commande" : gérée côté serveur (trigger Postgres AFTER INSERT orders).
 
       setCreatedOrderId(order.id);
       setCreatedDeliveryCode(order.deliveryCode);

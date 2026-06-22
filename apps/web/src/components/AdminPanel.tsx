@@ -428,7 +428,6 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
   const { orders, refreshOrders, updateOrderStatus, updateOrder, deleteOrder } = useOrders();
   const { users } = useAuth();
   const { showToast } = useToast();
-  const { createNotification } = useNotifications();
   const [search, setSearch] = useState(initialSearch);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
@@ -643,9 +642,7 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
                 onChange={async (e) => {
                   const livreurId = e.target.value;
                   await updateOrder(order.id, { livreurId: livreurId || undefined });
-                  if (livreurId) {
-                    await createNotification({ userId: livreurId, title: '🛵 Nouvelle mission !', message: `La commande ${order.id} vous a été assignée.`, type: 'assignment', orderId: order.id });
-                  }
+                  // Notif livreur "nouvelle mission" : gérée côté serveur (trigger Postgres sur livreur_id).
                   showToast(livreurId ? 'Livreur assigné ✅' : 'Livreur retiré ⚠️');
                 }}
                 className={`w-full border rounded-lg py-2 px-3 text-xs outline-none transition-all ${

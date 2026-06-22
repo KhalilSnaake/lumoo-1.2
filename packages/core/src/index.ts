@@ -9,6 +9,7 @@ export * from './types';
 // Services
 export * from './services/api';
 export * from './services/auth';
+export * from './services/notifications';
 
 // Contenu légal partagé (mobile + web)
 export * from './legal/documents';

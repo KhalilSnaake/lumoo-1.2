@@ -5,6 +5,7 @@ import { ChevronRight, KeyRound, LogOut, MessageCircle, Package, Pencil, Trash2,
 import { useAuth, apiDeleteOwnAccount } from "@lumoo/core";
 import { MaliPhoneInput } from "@/components/MaliPhoneInput";
 import { CityPicker } from "@/components/CityPicker";
+import { NotificationPreferences } from "@/components/notification-preferences";
 
 const ROLE_LABELS: Record<string, string> = {
   client: "Client",
@@ -195,6 +196,14 @@ export function AccountProfile() {
           label="Changer mon mot de passe"
           onPress={() => router.push("/changer-mot-de-passe")}
         />
+      </View>
+
+      {/* Préférences de notifications */}
+      <Text className="mb-2 ml-1 mt-8 text-xs font-bold uppercase tracking-wider text-gray-400">
+        Préférences
+      </Text>
+      <View className="rounded-3xl" style={CARD_SHADOW}>
+        <NotificationPreferences />
       </View>
 
       {/* Espace livreur — visible uniquement pour les comptes livreur */}

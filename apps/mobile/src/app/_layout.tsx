@@ -14,6 +14,7 @@ import {
 import { Inter_400Regular, Inter_600SemiBold } from "@expo-google-fonts/inter";
 import {
   initCore,
+  useAuth,
   getSupabase,
   AuthProvider,
   NotificationProvider,
@@ -29,6 +30,8 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/env";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CreateAccountModal } from "@/components/create-account-modal";
 import { ToastProvider } from "@/context/ToastContext";
+import * as Notifications from "expo-notifications";
+import { registerForPushNotifications } from "@/lib/push";
 
 initCore({
   supabaseUrl: SUPABASE_URL,
@@ -39,6 +42,23 @@ initCore({
 });
 
 SplashScreen.preventAutoHideAsync();
+
+// Enregistre le token push (lié au user_id si connecté) et route au tap sur une notif.
+// Doit vivre DANS les providers (utilise useAuth).
+function PushRegistrar() {
+  const { user } = useAuth();
+  useEffect(() => {
+    void registerForPushNotifications();
+  }, [user?.id]);
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const orderId = response.notification.request.content.data?.orderId as string | undefined;
+      if (orderId) router.push("/suivi");
+    });
+    return () => sub.remove();
+  }, []);
+  return null;
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -86,16 +106,6 @@ export default function RootLayout() {
             <OrderProvider>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="commandes"
-                  options={{
-                    headerShown: true,
-                    title: "Mes commandes",
-                    headerStyle: { backgroundColor: "#ffffff" },
-                    headerTintColor: "#16a34a",
-                    headerTitleStyle: { fontWeight: "800", color: "#16a34a" },
-                  }}
-                />
                 <Stack.Screen
                   name="produit/[id]"
                   options={{
@@ -160,6 +170,7 @@ export default function RootLayout() {
                   }}
                 />
               </Stack>
+              <PushRegistrar />
               <WhatsAppButton />
               <CreateAccountModal />
               <StatusBar style="dark" />

@@ -43,6 +43,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   userId?: string;
+  deviceId?: string;
   items: OrderItem[];
   customerName: string;
   customerPhone: string;
@@ -78,6 +79,7 @@ export interface OrderContextType {
 
 export interface CreateOrderInput {
   userId?: string;
+  deviceId?: string;
   items: CartItem[];
   customerName: string;
   customerPhone: string;

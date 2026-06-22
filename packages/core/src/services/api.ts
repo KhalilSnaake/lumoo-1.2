@@ -57,6 +57,7 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
   const { error: orderError } = await supabase.from('orders').insert({
     id: orderId,
     user_id: input.userId,
+    device_id: input.deviceId,
     customer_name: input.customerName,
     customer_phone: input.customerPhone,
     address: input.address,

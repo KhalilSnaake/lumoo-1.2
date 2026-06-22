@@ -56,6 +56,10 @@ BEGIN
         'Commande ' || NEW.id || ' — ' || NEW.total_price || ' F par ' || NEW.customer_name || '.',
         'new_order', NEW.id, 'admin_ops');
     END LOOP;
+    -- Client : accusé de réception dès la création (push + in-app si connecté)
+    PERFORM enqueue_notification(NEW.user_id, NEW.device_id, 'Commande reçue ✅',
+      'Merci ! Ta commande ' || NEW.id || ' a bien été reçue, on s''en occupe.',
+      'status_change', NEW.id, 'order');
     RETURN NEW;
   END IF;
 

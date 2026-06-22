@@ -109,7 +109,7 @@ Policies **scopées** : SELECT/UPDATE/DELETE `user_id = auth.uid() OR is_admin()
 2. lit URL+secret+clé anon dans `private.app_settings`.
 3. `PERFORM net.http_post(url, headers{Content-Type, Authorization: Bearer <anon>, apikey: <anon>, x-webhook-secret: <secret>}, body{userId, deviceId, title, message, data})`.
 
-**Triggers** sur la table métier (`AFTER INSERT` → notifie admins ; `AFTER UPDATE OF status` → notifie client ; `AFTER UPDATE OF assignee` → notifie l'assigné) et sur `contact_messages`.
+**Triggers** sur la table métier (`AFTER INSERT` → notifie admins **+ accusé de réception au client** ; `AFTER UPDATE OF status` → notifie client ; `AFTER UPDATE OF assignee` → notifie l'assigné) et sur `contact_messages`.
 
 **Fonction `send-push`** (Deno Edge Function ou Node Vercel) :
 - garde par **`x-webhook-secret`** (compare à un secret d'env).

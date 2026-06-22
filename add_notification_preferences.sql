@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 );
 
 ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own prefs select" ON notification_preferences;
 CREATE POLICY "own prefs select" ON notification_preferences FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "own prefs insert" ON notification_preferences;
 CREATE POLICY "own prefs insert" ON notification_preferences FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "own prefs update" ON notification_preferences;
 CREATE POLICY "own prefs update" ON notification_preferences FOR UPDATE USING (auth.uid() = user_id);

@@ -35,7 +35,13 @@ export default function NotificationsScreen() {
 
   function onPressNotif(n: Notification) {
     if (!n.read) void markAsRead(n.id);
-    if (n.orderId) router.push("/commandes");
+    // Mission livreur (assignment) → ses courses assignées ;
+    // sinon (commande du client) → ses commandes.
+    if (n.type === "assignment") {
+      router.push("/livraisons");
+    } else if (n.orderId) {
+      router.push(`/commande/${n.orderId}`);
+    }
   }
 
   if (!isLoggedIn) {

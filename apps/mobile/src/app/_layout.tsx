@@ -1,8 +1,8 @@
 import "react-native-url-polyfill/auto";
 import "../global.css";
 
-import { useEffect } from "react";
-import { Stack, router } from "expo-router";
+import { useEffect, useRef } from "react";
+import { Stack, router, useRootNavigationState } from "expo-router";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -32,6 +32,7 @@ import { CreateAccountModal } from "@/components/create-account-modal";
 import { ToastProvider } from "@/context/ToastContext";
 import * as Notifications from "expo-notifications";
 import { registerForPushNotifications } from "@/lib/push";
+import { getRecentOrders } from "@/lib/recent-orders";
 
 initCore({
   supabaseUrl: SUPABASE_URL,
@@ -45,21 +46,41 @@ SplashScreen.preventAutoHideAsync();
 
 // Enregistre le token push (lié au user_id si connecté) et route au tap sur une notif.
 // Doit vivre DANS les providers (utilise useAuth).
+// Connecté → détail (RLS) ; invité → suivi avec le code lu en LOCAL (le code n'est JAMAIS dans le push).
+async function openOrderFromNotification(orderId: string) {
+  const { data } = await getSupabase().auth.getSession();
+  if (data.session) {
+    router.push(`/commande/${orderId}`);
+    return;
+  }
+  const recents = await getRecentOrders();
+  const found = recents.find((o) => o.id === orderId);
+  if (found) router.push({ pathname: "/suivi", params: { id: orderId, code: found.code } });
+  else router.push("/suivi");
+}
+
 function PushRegistrar() {
   const { user } = useAuth();
+  const lastResponse = Notifications.useLastNotificationResponse();
+  const navState = useRootNavigationState();
+  const handledRef = useRef<string | null>(null);
+
+  // Enregistre le token au démarrage et à chaque (dé)connexion.
   useEffect(() => {
     void registerForPushNotifications();
   }, [user?.id]);
+
+  // Tap sur une notif — app ouverte OU démarrage à froid (le hook capte la notif qui a lancé l'app).
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const orderId = response.notification.request.content.data?.orderId as string | undefined;
-      if (!orderId) return;
-      // Connecté → détail de la commande ; invité → suivi par n°+code (pas d'accès RLS au détail).
-      if (user) router.push(`/commande/${orderId}`);
-      else router.push("/suivi");
-    });
-    return () => sub.remove();
-  }, [user?.id]);
+    if (!lastResponse || !navState?.key) return; // attendre que la navigation soit prête (cold start)
+    const notifId = lastResponse.notification.request.identifier;
+    if (handledRef.current === notifId) return; // évite le double-traitement
+    const orderId = lastResponse.notification.request.content.data?.orderId as string | undefined;
+    if (!orderId) return;
+    handledRef.current = notifId;
+    void openOrderFromNotification(orderId);
+  }, [lastResponse, navState?.key]);
+
   return null;
 }
 

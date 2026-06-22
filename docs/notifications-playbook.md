@@ -131,6 +131,7 @@ npx expo install expo-notifications expo-dev-client    # (+ expo-device, expo-co
 - **Appeler `registerForPushNotifications` au démarrage ET à la connexion** (`useEffect([user?.id])`) pour rattacher le token au `user_id`.
 - Listener de tap → `Notifications.addNotificationResponseReceivedListener` → route vers le suivi via `data.orderId`.
 - Au checkout : passer `deviceId` à la création de commande.
+- **Deep-link au tap → détail** : router via `data.orderId`. **Connecté** → écran détail (lecture RLS). **Invité** → écran de suivi avec le **code lu en LOCAL** (`recent-orders`, sauvegardé au checkout) — **jamais** mettre le code dans le push (il autorise la confirmation de livraison ; et le device qui reçoit le push est justement celui qui a passé la commande → il a le code). **Cold start** (app tuée) : utiliser `Notifications.useLastNotificationResponse()` + attendre `useRootNavigationState().key` ; le `addNotificationResponseReceivedListener` ne capte QUE l'app vivante.
 
 ---
 

@@ -126,7 +126,7 @@ export default function CartSidebar() {
         )}
 
         {/* Checkout Overlay */}
-        {showCheckout && items.length > 0 && (
+        {showCheckout && (
           <CheckoutOverlay onClose={() => setShowCheckout(false)} />
         )}
       </div>

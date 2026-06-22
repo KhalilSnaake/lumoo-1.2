@@ -14,6 +14,9 @@ export * from './services/notifications';
 // Contenu légal partagé (mobile + web)
 export * from './legal/documents';
 
+// Contenu légal partagé (CGU/CGV/confidentialité/mentions) — source unique web + mobile
+export * from './legal/documents';
+
 // Contexts (providers + hooks) — NOT ToastContext / ContactMessagesContext (web-only)
 export * from './context/AuthContext';
 export * from './context/CartContext';

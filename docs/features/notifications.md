@@ -3,7 +3,7 @@
 > Ce document décrit **comment le système tourne réellement dans CE repo** : les vrais fichiers,
 > le vrai déploiement, les déviations par rapport au plan, et comment débugger/étendre.
 >
-> - **Le « comment construire ça ailleurs » (générique, réutilisable)** → `~/.claude/docs/push-notifications-playbook.md`.
+> - **Le « comment construire ça ailleurs » (générique, réutilisable)** → [`docs/notifications-playbook.md`](../notifications-playbook.md) (copie cross-projet maintenue en phase dans `~/.claude/docs/`).
 > - **Le « ce qui était à faire » (plans datés)** → `docs/superpowers/plans/2026-06-22-notifications-push-unifie.md` (les 2 autres plans notif sont *superseded*).
 > - **Les galères chronologiques** → `docs/JOURNAL.md`.
 >

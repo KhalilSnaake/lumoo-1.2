@@ -11,7 +11,7 @@
   (`docs/features/…`) ou le playbook générique, on ne recopie pas.
 - Les entrées les plus récentes en **haut**.
 - Détails approfondis notif : voir [`docs/features/notifications.md`](features/notifications.md)
-  et le playbook réutilisable `~/.claude/docs/push-notifications-playbook.md` (§9 = cheatsheet pièges).
+  et le playbook réutilisable [`docs/notifications-playbook.md`](notifications-playbook.md) (§9 = cheatsheet pièges) — copie cross-projet maintenue en phase dans `~/.claude/docs/`.
 
 ## Modèle d'entrée (copier-coller)
 

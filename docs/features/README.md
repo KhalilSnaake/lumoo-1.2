@@ -12,7 +12,7 @@ Un fichier par système complexe : **comment ça marche au final, comment le dé
 - **Runbook (ici)** = état final + maintenance d'un système (spécifique Lumoo).
 - **Plan** = ce qui était à faire, daté → `docs/superpowers/plans/`.
 - **Journal d'erreurs** = galères chronologiques (toutes features) → [`../JOURNAL.md`](../JOURNAL.md).
-- **Playbook générique** = « comment construire ça sur n'importe quel projet » → `~/.claude/docs/`.
+- **Playbook générique** = « comment construire ça sur n'importe quel projet » → [`../notifications-playbook.md`](../notifications-playbook.md) (copie cross-projet : `~/.claude/docs/`).
 
 ## Ajouter un runbook
 

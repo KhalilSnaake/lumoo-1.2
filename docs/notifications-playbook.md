@@ -174,6 +174,7 @@ npx expo install expo-notifications expo-dev-client    # (+ expo-device, expo-co
 - **EAS env « development »** souvent vide → l'app dev ne se connecte à rien. Le profil **preview** charge mieux les env vars (selon config).
 - **Monorepo npm** : ajouter la dépendance dans `package.json` + **`npm install` à la racine** (pas `npm install <pkg>` dans le sous-dossier, ça casse `node_modules/.bin`).
 - **GitHub « secret detected » sur `google-services.json`** : c'est l'**API key Android** (`AIzaSy…`). **Faible risque** — elle est embarquée dans chaque APK, ce n'est pas un vrai secret. Fix = la **restreindre** dans Google Cloud Console (Application restrictions: Android + package + SHA‑1 ; API restrictions: Firebase/FCM), puis fermer l'alerte. Le **vrai** secret = la **clé de compte de service** (`private_key`, `type: service_account`) → **JAMAIS** dans le repo, uniquement dans EAS. (Option « zéro clé dans git » : retirer `google-services.json` du repo et l'injecter via une *file env var* EAS.)
+- **`device_id` invité = AsyncStorage → réinitialisé à CHAQUE réinstallation** de l'app (la désinstallation efface AsyncStorage). Conséquence : une commande invité passée **avant** une réinstall a un `device_id` orphelin → **pas de push**. Pour tester l'invité, passer la commande **après** l'install courant, et cibler une commande dont le `device_id` = celui du token. (Le connecté n'a pas ce souci : résolu par `user_id`.)
 
 ---
 

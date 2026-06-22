@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS device_tokens (
   token       TEXT PRIMARY KEY,                 -- ExpoPushToken (unique par appareil/app)
   device_id   TEXT NOT NULL,                    -- identifiant d'appareil stable (généré côté app)
-  user_id     TEXT REFERENCES users(id) ON DELETE SET NULL,  -- rempli si connecté
+  user_id     uuid REFERENCES auth.users(id) ON DELETE SET NULL,  -- rempli si connecté
   platform    TEXT,                             -- 'ios' | 'android'
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -25,7 +25,7 @@ BEGIN
     RAISE EXCEPTION 'invalid token or device_id';
   END IF;
   INSERT INTO device_tokens (token, device_id, user_id, platform, updated_at)
-  VALUES (p_token, p_device_id, auth.uid()::text, p_platform, now())
+  VALUES (p_token, p_device_id, auth.uid(), p_platform, now())
   ON CONFLICT (token) DO UPDATE
     SET device_id = EXCLUDED.device_id, user_id = EXCLUDED.user_id,
         platform = EXCLUDED.platform, updated_at = now();

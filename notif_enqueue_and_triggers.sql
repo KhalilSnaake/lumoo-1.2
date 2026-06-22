@@ -4,7 +4,7 @@
 
 -- 1) Helper : opt-out par catégorie, insert in-app (si user connu), push via pg_net.
 CREATE OR REPLACE FUNCTION enqueue_notification(
-  p_user_id TEXT, p_device_id TEXT, p_title TEXT, p_message TEXT,
+  p_user_id uuid, p_device_id TEXT, p_title TEXT, p_message TEXT,
   p_type TEXT, p_order_id TEXT, p_category TEXT
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
@@ -43,7 +43,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE title TEXT; msg TEXT; adm RECORD;
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    FOR adm IN SELECT id FROM users WHERE role = 'admin' LOOP
+    FOR adm IN SELECT id FROM profiles WHERE role = 'admin' LOOP
       PERFORM enqueue_notification(adm.id, NULL, '📦 Nouvelle commande !',
         'Commande ' || NEW.id || ' — ' || NEW.total_price || ' F par ' || NEW.customer_name || '.',
         'new_order', NEW.id, 'admin_ops');
@@ -66,7 +66,7 @@ BEGIN
   END IF;
 
   IF TG_OP = 'UPDATE' AND NEW.livreur_id IS DISTINCT FROM OLD.livreur_id AND NEW.livreur_id IS NOT NULL THEN
-    PERFORM enqueue_notification(NEW.livreur_id, NULL, '🛵 Nouvelle mission !',
+    PERFORM enqueue_notification(NEW.livreur_id::uuid, NULL, '🛵 Nouvelle mission !',
       'La commande ' || NEW.id || ' vous a été assignée.', 'assignment', NEW.id, 'admin_ops');
   END IF;
   RETURN NEW;
@@ -82,7 +82,7 @@ CREATE OR REPLACE FUNCTION trg_contact_notify() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE adm RECORD;
 BEGIN
-  FOR adm IN SELECT id FROM users WHERE role = 'admin' LOOP
+  FOR adm IN SELECT id FROM profiles WHERE role = 'admin' LOOP
     PERFORM enqueue_notification(adm.id, NULL, '✉️ Nouveau message',
       COALESCE(NEW.name,'Un client') || ' vous a écrit.', 'new_message', NULL, 'admin_ops');
   END LOOP;

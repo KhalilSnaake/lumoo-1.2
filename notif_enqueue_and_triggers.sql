@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION enqueue_notification(
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
   pref notification_preferences%ROWTYPE;
-  base TEXT; secret TEXT;
+  fn_url TEXT; secret TEXT; anon TEXT;
 BEGIN
   IF p_user_id IS NOT NULL THEN
     SELECT * INTO pref FROM notification_preferences WHERE user_id = p_user_id;
@@ -24,12 +24,20 @@ BEGIN
   END IF;
 
   -- Push (server-to-server). Invité => p_user_id NULL mais p_device_id présent.
-  SELECT value INTO base   FROM private.app_settings WHERE key = 'functions_base_url';
+  -- functions_base_url = URL COMPLÈTE de la fonction (slug réel, ex. .../functions/v1/rapid-service).
+  -- anon_key = clé publishable, envoyée en Authorization+apikey pour passer la passerelle quand
+  -- "Verify JWT" est activé. La vraie protection reste x-webhook-secret.
+  SELECT value INTO fn_url FROM private.app_settings WHERE key = 'functions_base_url';
   SELECT value INTO secret FROM private.app_settings WHERE key = 'push_webhook_secret';
-  IF base IS NOT NULL THEN
+  SELECT value INTO anon   FROM private.app_settings WHERE key = 'anon_key';
+  IF fn_url IS NOT NULL THEN
     PERFORM net.http_post(
-      url := base || '/send-push',
-      headers := jsonb_build_object('Content-Type','application/json','x-webhook-secret', secret),
+      url := fn_url,
+      headers := jsonb_build_object(
+        'Content-Type','application/json',
+        'Authorization','Bearer '||anon,
+        'apikey', anon,
+        'x-webhook-secret', secret),
       body := jsonb_build_object('userId', p_user_id, 'deviceId', p_device_id,
         'title', p_title, 'message', p_message,
         'data', jsonb_build_object('orderId', p_order_id, 'type', p_type))

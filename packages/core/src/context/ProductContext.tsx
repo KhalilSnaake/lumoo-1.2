@@ -53,34 +53,47 @@ function rowToProduct(row: any): Product {
   };
 }
 
-export type ProductsPageOpts = { page: number; pageSize: number; categoryId?: number | null; search?: string };
+export type ProductsPageOpts = { page: number; pageSize: number; categoryId?: number | null; search?: string; popularFirst?: boolean };
 
-// Pagination SERVEUR du catalogue : ne charge qu'une page (~20) à la fois via .range().
+// Pagination SERVEUR du catalogue/accueil : ne charge qu'une page (~20) à la fois via .range().
 // Additif — ne remplace pas le chargement complet du ProductContext (utilisé par l'admin/web).
 // Filtres (catégorie/recherche/published) faits côté serveur pour rester cohérents page à page.
+// `popularFirst` : remonte les produits populaires en tête, puis tri par date (tri déterministe
+// → pagination stable d'une page à l'autre, pas de doublons/oublis entre pages).
 export async function apiGetProductsPage(opts: ProductsPageOpts): Promise<{ products: Product[]; hasMore: boolean }> {
   const supabase = getSupabase();
-  const { page, pageSize, categoryId, search } = opts;
+  const { page, pageSize, categoryId, search, popularFirst } = opts;
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase
-    .from('products')
-    .select('*, categories(id, name, slug, created_at)')
-    .or('published.is.null,published.eq.true')
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const buildQuery = (withPopular: boolean) => {
+    let query = supabase
+      .from('products')
+      .select('*, categories(id, name, slug, created_at)')
+      .or('published.is.null,published.eq.true');
 
-  if (categoryId != null) query = query.eq('category_id', categoryId);
-  const s = (search ?? '').trim();
-  if (s) {
-    // Recherche nom OU description. On nettoie le terme (lettres/chiffres/espaces/tirets
-    // uniquement) pour qu'aucun caractère ne casse/injecte la syntaxe du filtre `.or`.
-    const safe = s.replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ').trim();
-    if (safe) query = query.or(`name.ilike.%${safe}%,description.ilike.%${safe}%`);
+    if (withPopular) query = query.order('is_popular', { ascending: false });
+    query = query.order('created_at', { ascending: false }).range(from, to);
+
+    if (categoryId != null) query = query.eq('category_id', categoryId);
+    const s = (search ?? '').trim();
+    if (s) {
+      // Recherche nom OU description. On nettoie le terme (lettres/chiffres/espaces/tirets
+      // uniquement) pour qu'aucun caractère ne casse/injecte la syntaxe du filtre `.or`.
+      const safe = s.replace(/[^\p{L}\p{N}\s-]/gu, ' ').replace(/\s+/g, ' ').trim();
+      if (safe) query = query.or(`name.ilike.%${safe}%,description.ilike.%${safe}%`);
+    }
+    return query;
+  };
+
+  let { data, error } = await buildQuery(!!popularFirst);
+
+  // Fallback : si la colonne `is_popular` n'existe pas encore en base, on retire ce tri et on retry
+  // (même garde défensive que updateProduct — cf. add_popular_column.sql).
+  if (error && popularFirst && /is_popular/.test(error.message ?? '')) {
+    ({ data, error } = await buildQuery(false));
   }
 
-  const { data, error } = await query;
   if (error || !data) return { products: [], hasMore: false };
   return { products: data.map(rowToProduct), hasMore: data.length === pageSize };
 }

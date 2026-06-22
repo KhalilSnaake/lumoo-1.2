@@ -84,7 +84,7 @@ export default function CommandesScreen() {
             accessibilityRole="button"
             className="mt-3 h-12 w-full items-center justify-center rounded-2xl bg-gray-100 px-6 active:opacity-80"
           >
-            <Text className="font-body-semibold text-gray-700">Voir le catalogue</Text>
+            <Text className="font-body-semibold text-gray-700">Voir les produits</Text>
           </Pressable>
         </View>
       );
@@ -141,7 +141,7 @@ export default function CommandesScreen() {
           Aucune commande pour l&apos;instant
         </Text>
         <Text className="mt-1 text-center font-body text-gray-500">
-          Parcours le catalogue et passe ta première commande.
+          Parcours les produits et passe ta première commande.
         </Text>
         <Pressable
           onPress={() => router.replace("/catalogue")}
@@ -149,7 +149,7 @@ export default function CommandesScreen() {
           style={CARD_SHADOW}
           className="mt-6 h-12 items-center justify-center rounded-2xl bg-brand px-6 active:opacity-80"
         >
-          <Text className="font-display-semibold text-white">Découvrir le catalogue</Text>
+          <Text className="font-display-semibold text-white">Découvrir les produits</Text>
         </Pressable>
       </View>
     );

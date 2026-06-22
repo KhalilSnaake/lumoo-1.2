@@ -22,7 +22,7 @@ export default function PanierScreen() {
           <ShoppingBag size={56} color="#9CA3AF" />
           <Text className="mt-4 font-display text-lg text-gray-700">Votre panier est vide</Text>
           <Text className="mt-1 text-center font-body text-gray-500">
-            Ajoutez des produits depuis l&apos;accueil ou le catalogue.
+            Ajoutez des produits depuis l&apos;accueil ou l&apos;onglet Produits.
           </Text>
         </View>
       </View>

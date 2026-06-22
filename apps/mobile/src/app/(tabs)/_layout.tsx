@@ -16,7 +16,7 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: BRAND,
         tabBarInactiveTintColor: INACTIVE,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         headerStyle: { backgroundColor: "#ffffff" },
         headerTintColor: BRAND,
         headerTitleStyle: { fontWeight: "800", color: BRAND },
@@ -50,7 +50,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="catalogue"
         options={{
-          title: "Catalogue",
+          title: "Produits",
           tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} />,
         }}
       />

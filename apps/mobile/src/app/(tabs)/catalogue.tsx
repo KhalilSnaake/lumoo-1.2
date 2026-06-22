@@ -114,9 +114,12 @@ export default function CatalogueScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListHeaderComponent={
-            <View className="px-2 pb-3">
-              <HomeBanner />
-            </View>
+            // En recherche : pas de bannière → les résultats remontent en haut (au-dessus du clavier)
+            debouncedSearch ? null : (
+              <View className="px-2 pb-3">
+                <HomeBanner />
+              </View>
+            )
           }
           renderItem={({ item }) => <ProductCard product={item} />}
           ListFooterComponent={

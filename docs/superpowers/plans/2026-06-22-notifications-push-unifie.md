@@ -2,12 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 > Ce plan **remplace** `2026-06-22-push-notifications-invite.md` et `2026-06-22-notifications-enrichissement.md`.
+>
+> **⚠️ Mise à jour (déploiement) :** `send-push` n'est PAS une Edge Function Supabase mais une **fonction serverless Vercel** (`api/send-push.ts`), car le serverless du projet est sur Vercel. Conséquences : déploiement = **git push** (auto-deploy Vercel, pas de CLI/paste) ; secrets posés dans les **env vars Vercel** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PUSH_WEBHOOK_SECRET`, `EXPO_ACCESS_TOKEN`) ; `private.app_settings.functions_base_url` = `https://<domaine-vercel>/api`. La Task 5 / Phase 2 ci-dessous (variante Supabase Deno) est conservée pour mémoire mais **non retenue**.
 
 **Goal:** Notifier tout le monde (client connecté **ou** invité, admin, livreur) aux étapes clés, **immédiatement** et sur **deux canaux** : in-app (connectés) + push (tous, app fermée incluse), avec garde-fous anti-spam.
 
-**Architecture:** **Tout est déclenché par des triggers Postgres.** Sur `INSERT/UPDATE orders` et `INSERT contact_messages`, un trigger appelle un helper SQL `enqueue_notification()` qui (1) applique les préférences, (2) insère la notif in-app si on connaît le `user_id`, (3) appelle — via `pg_net`, côté serveur — une Edge Function générique `send-push` qui résout les tokens (par `user_id` et/ou `device_id`) et envoie via Expo Push. Aucune confiance accordée au client : l'invité ne peut ni choisir le destinataire ni le contenu.
+**Architecture:** **Tout est déclenché par des triggers Postgres.** Sur `INSERT/UPDATE orders` et `INSERT contact_messages`, un trigger appelle un helper SQL `enqueue_notification()` qui (1) applique les préférences, (2) insère la notif in-app si on connaît le `user_id`, (3) appelle — via `pg_net`, côté serveur — une **fonction serverless Vercel** `send-push` (`api/send-push.ts`) qui résout les tokens (par `user_id` et/ou `device_id`) et envoie via Expo Push. Aucune confiance accordée au client : l'invité ne peut ni choisir le destinataire ni le contenu.
 
-**Tech Stack:** Supabase (Postgres, RLS, `pg_net`, Edge Functions Deno), API Expo Push, Expo SDK 54 (`expo-notifications`), `@lumoo/core`, admin web.
+**Tech Stack:** Supabase (Postgres, RLS, `pg_net`), **Vercel serverless (Node)** pour `send-push`, API Expo Push, Expo SDK 54 (`expo-notifications`), `@lumoo/core`, admin web.
 
 ## Global Constraints
 

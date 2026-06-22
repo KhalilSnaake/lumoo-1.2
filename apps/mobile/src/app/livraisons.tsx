@@ -60,6 +60,7 @@ export default function LivraisonsScreen() {
         keyExtractor={(o) => o.id}
         renderItem={({ item }) => <DeliveryCard order={item} onValidated={reload} />}
         contentContainerClassName="p-4 gap-4"
+        ListFooterComponent={<View style={{ height: insets.bottom + 24 }} />}
         keyboardShouldPersistTaps="handled"
         initialNumToRender={8}
         windowSize={7}

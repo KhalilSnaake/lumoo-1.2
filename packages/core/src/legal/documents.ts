@@ -123,45 +123,59 @@ export const LEGAL_DOCS: Record<string, LegalDoc> = {
     slug: "confidentialite",
     title: "Politique de confidentialité",
     intro:
-      "Lumoo protège tes données personnelles conformément à la loi n°2013-015 du 21 mai 2013 portant protection des données à caractère personnel en République du Mali.",
+      "Lumoo protège tes données personnelles conformément à la loi n°2013-015 du 21 mai 2013 portant protection des données à caractère personnel en République du Mali, sous le contrôle de l'APDP (Autorité de Protection des Données à caractère Personnel).",
     sections: [
       {
         heading: "1. Responsable du traitement",
-        paragraphs: ["[Raison sociale], [adresse]. Contact : [email]."],
+        paragraphs: ["[Raison sociale], [adresse], Bamako, Mali. Contact : [email]."],
       },
       {
-        heading: "2. Données collectées",
+        heading: "2. Déclaration à l'APDP",
+        paragraphs: [
+          "Conformément à la loi n°2013-015, le traitement de tes données fait l'objet d'une déclaration préalable auprès de l'APDP, qui en délivre un récépissé (n° [à compléter]).",
+        ],
+      },
+      {
+        heading: "3. Données collectées",
         paragraphs: [
           "Nom, email, numéro de téléphone, adresse de livraison, localisation (si tu l'autorises) et historique de commandes.",
         ],
       },
       {
-        heading: "3. Finalités",
+        heading: "4. Finalités",
         paragraphs: [
           "Création et gestion de ton compte, traitement et livraison des commandes, contact via WhatsApp, et amélioration du service.",
         ],
       },
       {
-        heading: "4. Base légale",
-        paragraphs: ["Le traitement repose sur ton consentement et sur l'exécution du contrat de vente."],
+        heading: "5. Base légale",
+        paragraphs: [
+          "Le traitement repose sur ton consentement et sur l'exécution du contrat de vente, ainsi que sur le respect des obligations légales.",
+        ],
       },
       {
-        heading: "5. Partage des données",
+        heading: "6. Partage et transferts",
         paragraphs: [
           "Tes données peuvent être communiquées aux livreurs et aux prestataires de paiement, uniquement pour exécuter ta commande. Elles ne sont jamais vendues.",
+          "Tout transfert de données en dehors du Mali est encadré conformément à la loi n°2013-015.",
         ],
       },
       {
-        heading: "6. Conservation",
+        heading: "7. Conservation",
         paragraphs: [
-          "Tes données sont conservées le temps nécessaire à la gestion de ton compte et au respect des obligations légales.",
+          "Tes données sont conservées [durée à préciser], le temps nécessaire à la gestion de ton compte et au respect des obligations légales, puis supprimées ou anonymisées.",
         ],
       },
       {
-        heading: "7. Tes droits",
+        heading: "8. Tes droits",
         paragraphs: [
-          "Tu disposes d'un droit d'accès, de rectification et de suppression de tes données. Pour les exercer : [email].",
-          "Tu peux également saisir l'APDP (Autorité de Protection des Données à caractère Personnel) du Mali.",
+          "Tu disposes d'un droit d'accès, de rectification, de suppression et d'opposition sur tes données. Pour les exercer : [email].",
+        ],
+      },
+      {
+        heading: "9. Réclamation auprès de l'APDP",
+        paragraphs: [
+          "Si tu estimes que tes droits ne sont pas respectés, tu peux saisir l'APDP — Autorité de Protection des Données à caractère Personnel (Mali), site : apdp.ml.",
         ],
       },
     ],

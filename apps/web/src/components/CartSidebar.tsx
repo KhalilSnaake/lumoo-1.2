@@ -1,5 +1,5 @@
-import { useCart, useOrders, useAuth } from '@lumoo/core';
-import type { PaymentMethod } from '@lumoo/core';
+import { useCart, useOrders, useAuth, apiGetPaymentMethods } from '@lumoo/core';
+import type { PaymentMethod, PaymentMethodConfig } from '@lumoo/core';
 import { useState, useEffect } from 'react';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import MaliPhoneInput from './MaliPhoneInput';
@@ -149,6 +149,7 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
   const [createdOrderId, setCreatedOrderId] = useState('');
   const [createdDeliveryCode, setCreatedDeliveryCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pmConfig, setPmConfig] = useState<PaymentMethodConfig[]>([]);
 
   // Pré-remplir nom + téléphone depuis le profil quand l'utilisateur est connecté
   useEffect(() => {
@@ -160,14 +161,26 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
     }
   }, [user]);
 
+  // Méthodes de paiement configurables (admin) ; n'affiche que les activées, repli si vide.
+  useEffect(() => { apiGetPaymentMethods().then(setPmConfig); }, []);
+
   const formatPrice = (price: number) => price.toLocaleString('fr-FR');
 
-  const paymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', icon: <OrangeMoneyLogo /> },
-    { id: 'moov_money', name: 'Moov Money', icon: <MoovMoneyLogo /> },
-    { id: 'wave', name: 'Wave', icon: <WaveLogo /> },
-    { id: 'livraison', name: 'Paiement à la livraison', icon: <CashLogo /> },
+  const PM_LOGOS: Record<PaymentMethod, JSX.Element> = {
+    orange_money: <OrangeMoneyLogo />,
+    moov_money: <MoovMoneyLogo />,
+    wave: <WaveLogo />,
+    livraison: <CashLogo />,
+  };
+  const PM_DEFAULT: { id: PaymentMethod; name: string }[] = [
+    { id: 'orange_money', name: 'Orange Money' },
+    { id: 'moov_money', name: 'Moov Money' },
+    { id: 'wave', name: 'Wave' },
+    { id: 'livraison', name: 'Paiement à la livraison' },
   ];
+  // N'affiche que les méthodes ACTIVÉES en admin (repli sur la liste par défaut si la table est vide).
+  const paymentMethods = (pmConfig.length ? pmConfig.filter(m => m.enabled).map(m => ({ id: m.id, name: m.label })) : PM_DEFAULT)
+    .map(m => ({ ...m, icon: PM_LOGOS[m.id] }));
 
   const canProceedToPayment = name && phone && address && city;
   const canPay = paymentMethod && (paymentMethod === 'livraison' || paymentPhone);

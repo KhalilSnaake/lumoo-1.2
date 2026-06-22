@@ -53,10 +53,13 @@ function PushRegistrar() {
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const orderId = response.notification.request.content.data?.orderId as string | undefined;
-      if (orderId) router.push("/suivi");
+      if (!orderId) return;
+      // Connecté → détail de la commande ; invité → suivi par n°+code (pas d'accès RLS au détail).
+      if (user) router.push(`/commande/${orderId}`);
+      else router.push("/suivi");
     });
     return () => sub.remove();
-  }, []);
+  }, [user?.id]);
   return null;
 }
 

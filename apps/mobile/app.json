@@ -40,10 +40,10 @@
         {
           "backgroundColor": "#ffffff",
           "image": "./assets/images/splash-logo.png",
-          "imageWidth": 200,
+          "imageWidth": 165,
           "android": {
             "image": "./assets/images/splash-logo.png",
-            "imageWidth": 200
+            "imageWidth": 165
           }
         }
       ],

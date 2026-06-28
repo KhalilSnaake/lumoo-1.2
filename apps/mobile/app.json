@@ -20,7 +20,7 @@
       "package": "ml.lumoo.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#A0C20C",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -38,11 +38,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#16a34a",
-          "image": "./assets/images/logo-lumoo.png",
+          "backgroundColor": "#ffffff",
+          "image": "./assets/images/splash-logo.png",
           "imageWidth": 200,
           "android": {
-            "image": "./assets/images/logo-lumoo.png",
+            "image": "./assets/images/splash-logo.png",
             "imageWidth": 200
           }
         }
@@ -56,7 +56,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/images/notification-icon.png",
           "color": "#16a34a"
         }
       ]

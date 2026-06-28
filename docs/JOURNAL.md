@@ -28,6 +28,20 @@
 
 ## Entrées
 
+### 2026-06-28 — Icônes & Splash Android/iOS — coins blancs + splash rogné
+- **Symptôme** : (1) icône d'app laisse du **blanc dans les coins** sur certains téléphones ; (2) **splash** affiche le logo **coupé** à droite (« …de Proximi**té** » tronqué).
+- **Cause racine** :
+  - **Icône adaptative Android** : `adaptiveIcon.backgroundColor` était `#ffffff` + premier plan = **cercle** vert sur transparent. Les launchers à masque **carré/squircle** montrent le fond blanc dans les coins (un masque rond, lui, le cachait → « seulement certains téléphones »).
+  - **Icône iOS** (`icon.png`) : image **opaque** cercle-sur-carré-blanc → iOS masque en carré arrondi et révèle les coins blancs.
+  - **Splash Android 12+** : le plugin `expo-splash-screen` compose l'image dans un canevas **288 dp**, puis Android l'affiche en `windowSplashScreenAnimatedIcon` **masqué en cercle ~192 dp**. Tout ce qui dépasse ce cercle est rogné. Un logo **large ou haut** + un `imageWidth` trop grand (260) → déborde du cercle → coupé.
+  - **Icône de notif** : pointait sur `icon.png` (opaque) → Android n'utilise que l'alpha → **carré blanc** (cf. playbook §9).
+- **Fix** (commit à venir) : `adaptiveIcon.backgroundColor` = **`#A0C20C`** (vert exact du panier) + premier plan = **panier blanc seul** ; `icon.png` refait en **vert plein cadre** ; splash en **fond blanc** + logo empilé carré centré **dans la zone sûre** + `imageWidth` **260 → 200** (tout tient dans le cercle) ; notif → `notification-icon.png` (panier **blanc/transparent**).
+- **Prévention** :
+  - **Icône adaptative** = fond **plein** (couleur ou image full-bleed), jamais blanc derrière un premier plan qui ne remplit pas le canevas. Le premier plan = le **mark seul** sur transparent.
+  - **Splash Android 12** = penser **cercle ~192 dp** : le logo doit **tenir dans un cercle centré**, pas juste dans un carré. Un logo large/haut sera rogné. `imageWidth` ≈ 200 max pour ce logo ; idéalement viser un **mark rond** (remplit le cercle) ou réduire jusqu'à ce que tout rentre. Fond = même couleur que le padding du logo → un éventuel rognage de bord devient invisible.
+  - Tout ça = **assets natifs → rebuild EAS** (jamais OTA / jamais visible dans Expo Go).
+- **Voir aussi** : playbook §9 (piège icône notif) ; `app.json` (`adaptiveIcon`, `expo-splash-screen`, `expo-notifications`).
+
 ### 2026-06-22 — Notif/FCM — 0 token sur Android malgré permission accordée
 - **Symptôme** : `device_tokens` reste vide même avec la permission notifications **acceptée** ; aucun push possible.
 - **Cause racine** : **FCM non configuré**. Sur Android, `getExpoPushTokenAsync` a besoin du `google-services.json` (côté app) pour obtenir un token → sans lui il **échoue silencieusement** (l'appel est en `void`, l'erreur passe inaperçue).

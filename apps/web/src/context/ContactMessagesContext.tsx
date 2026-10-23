@@ -19,7 +19,7 @@ const ContactMessagesContext = createContext<ContactMessagesContextType | undefi
 
 export function ContactMessagesProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
   // Fetch messages from Supabase
@@ -27,31 +27,25 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     try {
       setLoading(true);
-      console.log('📧 Fetching contact messages...');
-
       const { data, error } = await supabase
         .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Error fetching messages:', error);
-        showToast('Erreur de chargement des messages: ' + error.message, 'error');
-        setMessages([]);
-        setLoading(false);
+        console.error('Error fetching contact messages:', error);
+        showToast('Impossible de charger les messages : ' + error.message, 'error');
         return;
       }
 
-      console.log('✅ Messages loaded:', data?.length || 0, data);
       const normalized = (data || []).map((m: any) => ({
         ...m,
         is_read: m.is_read ?? false,
       }));
       setMessages(normalized);
-    } catch (err: any) {
-      console.error('❌ Unexpected error:', err);
-      showToast('Erreur inattendue', 'error');
-      setMessages([]);
+    } catch (error) {
+      console.error('Unexpected error fetching contact messages:', error);
+      showToast('Impossible de charger les messages. Vérifiez votre connexion.', 'error');
     } finally {
       setLoading(false);
     }
@@ -59,8 +53,7 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
 
   // Initial fetch on mount
   useEffect(() => {
-    console.log('📧 ContactMessagesProvider mounted, fetching messages...');
-    fetchMessages();
+    void fetchMessages();
     return () => {};
   }, []);
 
@@ -73,9 +66,10 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'contact_messages' },
         (payload) => {
-          console.log('🔔 New message received:', payload.new);
-          setMessages(prev => [payload.new as ContactMessage, ...prev]);
-          showToast('📬 Nouveau message reçu !', 'info');
+          setMessages(prev => prev.some(message => message.id === payload.new.id)
+            ? prev
+            : [{ ...payload.new, is_read: false } as ContactMessage, ...prev]);
+          showToast('Nouveau message reçu.', 'info');
         }
       )
       .subscribe();
@@ -91,91 +85,59 @@ export function ContactMessagesProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = async (messageId: string) => {
     const supabase = getSupabase();
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .update({ is_read: true })
-        .eq('id', messageId);
+    const { error } = await supabase
+      .from('contact_messages')
+      .update({ is_read: true })
+      .eq('id', messageId);
 
-      if (error) throw error;
-
-      setMessages(prev => prev.map(msg =>
-        msg.id === messageId ? { ...msg, is_read: true } : msg
-      ));
-
-      showToast('Message marqué comme lu ✅');
-    } catch (err: any) {
-      console.error('Error marking as read:', err);
-      showToast('Erreur lors de la mise à jour', 'error');
-    }
+    if (error) throw new Error(error.message || 'Le message n’a pas pu être marqué comme lu.');
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId ? { ...msg, is_read: true } : msg
+    ));
   };
 
   const markAsUnread = async (messageId: string) => {
     const supabase = getSupabase();
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .update({ is_read: false })
-        .eq('id', messageId);
+    const { error } = await supabase
+      .from('contact_messages')
+      .update({ is_read: false })
+      .eq('id', messageId);
 
-      if (error) throw error;
-
-      setMessages(prev => prev.map(msg =>
-        msg.id === messageId ? { ...msg, is_read: false } : msg
-      ));
-
-      showToast('Message marqué comme non lu ✅');
-    } catch (err: any) {
-      console.error('Error marking as unread:', err);
-      showToast('Erreur lors de la mise à jour', 'error');
-    }
+    if (error) throw new Error(error.message || 'Le message n’a pas pu être marqué comme non lu.');
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId ? { ...msg, is_read: false } : msg
+    ));
   };
 
   const sendReply = async (messageId: string, response: string) => {
     const supabase = getSupabase();
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .update({
-          response: response,
-          responded_at: new Date().toISOString(),
-          is_read: true
-        })
-        .eq('id', messageId);
+    const respondedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from('contact_messages')
+      .update({
+        response,
+        responded_at: respondedAt,
+        is_read: true,
+      })
+      .eq('id', messageId);
 
-      if (error) throw error;
-
-      setMessages(prev => prev.map(msg =>
-        msg.id === messageId
-          ? { ...msg, response, responded_at: new Date().toISOString(), is_read: true }
-          : msg
-      ));
-
-      showToast('Réponse envoyée avec succès ✅');
-    } catch (err: any) {
-      console.error('Error sending reply:', err);
-      showToast('Erreur lors de l\'envoi de la réponse', 'error');
-    }
+    if (error) throw new Error(error.message || 'La réponse n’a pas pu être enregistrée.');
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, response, responded_at: respondedAt, is_read: true }
+        : msg
+    ));
   };
 
   const deleteMessage = async (messageId: string) => {
     const supabase = getSupabase();
-    if (!confirm('Supprimer ce message définitivement ?')) return;
+    const { error } = await supabase
+      .from('contact_messages')
+      .delete()
+      .eq('id', messageId);
 
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .delete()
-        .eq('id', messageId);
-
-      if (error) throw error;
-
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-      showToast('Message supprimé ✅');
-    } catch (err: any) {
-      console.error('Error deleting message:', err);
-      showToast('Erreur lors de la suppression', 'error');
-    }
+    if (error) throw new Error(error.message || 'Le message n’a pas pu être supprimé.');
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
 
   const createTestMessage = async () => {

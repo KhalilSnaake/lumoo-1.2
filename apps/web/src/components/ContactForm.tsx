@@ -184,13 +184,13 @@ export default function ContactForm({ onClose }: { onClose: () => void }) {
           <div className="mt-6 pt-4 border-t border-gray-100 text-center text-xs text-gray-400 space-y-2">
             <p>Ou contactez-nous directement :</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="tel:+22377996858" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
-                <span>📞</span> +223 77 99 68 58
+              <a href="tel:+22384007200" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
+                <span>📞</span> +223 84 00 72 00
               </a>
               <a href="mailto:contact@lumoo.ml" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
                 <span>📧</span> contact@lumoo.ml
               </a>
-              <a href="https://wa.me/22377996858" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
+              <a href="https://wa.me/22384007200" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
                 <span>📲</span> WhatsApp
               </a>
             </div>

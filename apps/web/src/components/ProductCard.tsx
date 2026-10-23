@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useState } from 'react';
 import ProductModal from './ProductModal';
 import { optimizeImageUrl } from '../utils/images';
+import { getEffectiveProductPrice, hasPromoPrice } from '@lumoo/core';
 
 interface ProductCardProps {
   product: Product;
@@ -17,6 +18,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   const cartItem = items.find(item => item.product.id === product.id);
+  const promoActive = hasPromoPrice(product);
+  const effectivePrice = getEffectiveProductPrice(product);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,6 +54,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           
           {/* Étiquettes dynamiques avec icônes et couleurs */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+            {promoActive && (
+              <span className="rounded-lg bg-red-600 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white shadow-sm">
+                Promo
+              </span>
+            )}
             {(typeof product.category === 'string'
               ? product.category === 'legumes'
               : product.category?.slug === 'legumes') && (
@@ -61,6 +69,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.labels?.split(',').map((label, idx) => {
               const text = label.trim().toLowerCase();
               if (!text) return null;
+              if (promoActive && text === 'promo') return null;
 
               // Styles par défaut
               let config = { bg: 'bg-green-500', icon: '✨' };
@@ -95,9 +104,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="text-xs text-gray-400 mb-3 line-clamp-2 flex-1 leading-relaxed">{product.description}</p>
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-lg font-extrabold text-green-600">
-                {formatPrice(product.price)}
-              </span>
+              {promoActive && (
+                <span className="mr-1 text-xs font-semibold text-gray-400 line-through">
+                  {formatPrice(product.price)}
+                </span>
+              )}
+              <span className="text-lg font-extrabold text-green-600">{formatPrice(effectivePrice)}</span>
               <span className="text-[10px] text-gray-400 ml-1 font-bold">F / {product.unit}</span>
             </div>
             <button

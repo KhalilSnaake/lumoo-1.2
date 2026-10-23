@@ -1,12 +1,13 @@
 import { useCart, useOrders, useAuth, apiGetPaymentMethods } from '@lumoo/core';
 import type { PaymentMethod, PaymentMethodConfig } from '@lumoo/core';
+import { getEffectiveProductPrice } from '@lumoo/core';
 import { useState, useEffect } from 'react';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
 
 export default function CartSidebar() {
-  const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, totalItems } = useCart();
+  const { items, isCartOpen, setIsCartOpen, setIsCartBuilderOpen, updateQuantity, removeFromCart, totalPrice, totalItems } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
 
   const formatPrice = (price: number) => price.toLocaleString('fr-FR');
@@ -44,10 +45,22 @@ export default function CartSidebar() {
         {/* Cart Items */}
         {items.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <span className="text-6xl block mb-4">🛒</span>
-              <p className="font-medium text-gray-600">Votre panier est vide</p>
-              <p className="text-sm mt-1">Ajoutez des produits pour commencer</p>
+            <div className="px-6 text-center">
+              <span aria-hidden="true" className="mb-4 block text-6xl">🛒</span>
+              <p className="font-bold text-gray-700">Votre panier est vide</p>
+              <p className="mt-1 text-sm text-gray-600">Composez votre panier avec les produits qui vous plaisent.</p>
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  setIsCartBuilderOpen(true);
+                }}
+                className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-md shadow-green-200 transition-all duration-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2 active:scale-95"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m-7-7h14" />
+                </svg>
+                Créer mon panier
+              </button>
             </div>
           </div>
         ) : (
@@ -68,7 +81,7 @@ export default function CartSidebar() {
                     <p className="text-xs text-gray-400">{item.product.unit}</p>
                     <div className="flex items-center justify-between mt-1.5">
                       <span className="text-sm font-bold text-green-600">
-                        {formatPrice(item.product.price * item.quantity)} FCFA
+                        {formatPrice(getEffectiveProductPrice(item.product) * item.quantity)} FCFA
                       </span>
 
                       {/* Quantity controls */}
@@ -232,7 +245,7 @@ function CheckoutOverlay({ onClose }: { onClose: () => void }) {
                 {items.map(item => (
                   <div key={item.product.id} className="flex justify-between text-xs text-gray-600 py-0.5">
                     <span>{item.product.name} ×{item.quantity}</span>
-                    <span className="font-medium">{formatPrice(item.product.price * item.quantity)} FCFA</span>
+                    <span className="font-medium">{formatPrice(getEffectiveProductPrice(item.product) * item.quantity)} FCFA</span>
                   </div>
                 ))}
               </div>

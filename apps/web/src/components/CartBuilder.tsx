@@ -11,6 +11,7 @@ import type { PaymentMethod, PaymentMethodConfig, Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import ProductModal from './ProductModal';
+import { getEffectiveProductPrice, hasPromoPrice } from '@lumoo/core';
 import MaliPhoneInput from './MaliPhoneInput';
 import LocationPicker from './LocationPicker';
 
@@ -298,7 +299,8 @@ export default function CartBuilder() {
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-bold text-gray-800 truncate">{product.name}</h4>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-sm font-extrabold text-green-600">{formatPrice(product.price)}</span>
+                            {hasPromoPrice(product) && <span className="text-[10px] text-gray-400 line-through">{formatPrice(product.price)}</span>}
+                            <span className="text-sm font-extrabold text-green-600">{formatPrice(getEffectiveProductPrice(product))}</span>
                             <span className="text-[10px] text-gray-400">F / {product.unit}</span>
                           </div>
                         </div>
@@ -336,7 +338,7 @@ export default function CartBuilder() {
                         <img src={item.product.image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold truncate text-gray-700">{item.product.name}</p>
-                          <p className="text-[10px] text-gray-400">{formatPrice(item.product.price)} × {item.quantity}</p>
+                          <p className="text-[10px] text-gray-400">{formatPrice(getEffectiveProductPrice(item.product))} × {item.quantity}</p>
                         </div>
                         <button onClick={() => removeFromCart(item.product.id)} className="text-gray-300 hover:text-red-500">✕</button>
                       </div>
@@ -428,7 +430,7 @@ export default function CartBuilder() {
                   onClick={() => {
                     const itemsList = items.map(i => `${i.product.name} x${i.quantity}`).join('\n');
                     const msg = encodeURIComponent(`Bonjour Lumoo ! Voici ma commande n° ${createdOrderId}\n\nArticles :\n${itemsList}\n\nTotal : ${formatPrice(totalPrice)} FCFA`);
-                    window.open(`https://wa.me/22377996858?text=${msg}`, '_blank');
+                    window.open(`https://wa.me/22384007200?text=${msg}`, '_blank');
                   }}
                   className="w-full py-4 bg-[#25D366] text-white font-black rounded-2xl shadow-lg flex items-center justify-center gap-2 hover:bg-green-600 transition-all"
                 >

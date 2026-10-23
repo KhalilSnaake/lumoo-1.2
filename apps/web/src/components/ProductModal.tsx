@@ -1,4 +1,5 @@
 import { useCart } from '@lumoo/core';
+import { getEffectiveProductPrice, hasPromoPrice } from '@lumoo/core';
 import type { Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import { useState } from 'react';
@@ -31,6 +32,11 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         <div className="h-96 flex items-center justify-center relative bg-gray-50 overflow-hidden">
           <img src={optimizeImageUrl(product.image_url, 'modal')} alt={product.name} className="w-full h-full object-contain" />
           <div className="absolute top-4 left-4 flex flex-col gap-2">
+            {hasPromoPrice(product) && (
+              <span className="rounded-xl bg-red-700 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg">
+                Promo
+              </span>
+            )}
             {product.category === 'legumes' && (
               <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest shadow-lg flex items-center gap-1.5">
                 <span>🥬</span> FRAIS
@@ -39,6 +45,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             {product.labels?.split(',').map((label, idx) => {
               const text = label.trim().toLowerCase();
               if (!text) return null;
+              if (hasPromoPrice(product) && text === 'promo') return null;
               let bg = 'bg-green-500';
               let icon = '✨';
               if (text === 'top') { bg = 'bg-orange-500'; icon = '🔥'; }
@@ -69,8 +76,11 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             <p className="text-sm text-gray-500 mt-1 leading-relaxed">{product.description}</p>
           </div>
 
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-extrabold text-green-600">{formatPrice(product.price)}</span>
+          <div className="flex items-baseline gap-2">
+            {hasPromoPrice(product) && (
+              <span className="text-lg font-semibold text-gray-400 line-through">{formatPrice(product.price)}</span>
+            )}
+            <span className="text-3xl font-extrabold text-green-600">{formatPrice(getEffectiveProductPrice(product))}</span>
             <span className="text-sm text-gray-400 font-medium">FCFA</span>
             <span className="text-xs text-gray-400 ml-1">/ {product.unit}</span>
           </div>
@@ -103,7 +113,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-200 transition-all active:scale-95 text-sm flex items-center justify-center gap-2"
             >
               <span className="text-xs uppercase opacity-80 font-black">Ajouter au panier</span>
-              <span className="text-sm font-bold">{formatPrice(product.price * qty)}</span>
+              <span className="text-sm font-bold">{formatPrice(getEffectiveProductPrice(product) * qty)}</span>
             </button>
           </div>
         </div>

@@ -19,6 +19,17 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
     setMenuOpen(false);
     action();
   };
+  const openCartAction = () => {
+    if (totalItems === 0) {
+      setIsCartBuilderOpen(true);
+    } else {
+      setIsCartOpen(true);
+    }
+  };
+  const cartActionLabel = totalItems === 0 ? 'Créer mon panier' : 'Mon panier';
+  const cartActionAriaLabel = totalItems === 0
+    ? 'Créer mon panier'
+    : `Ouvrir mon panier, ${totalItems} article${totalItems > 1 ? 's' : ''}`;
 
   const roleColors: Record<string, string> = { admin: 'bg-red-100 text-red-700', client: 'bg-blue-100 text-blue-700', livreur: 'bg-orange-100 text-orange-700' };
   const roleNames: Record<string, string> = { admin: 'admin', client: 'Client', livreur: 'Livreur' };
@@ -51,7 +62,7 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
             </a>
 
             {/* Desktop Search */}
-            <div className="hidden md:block flex-1 max-w-xs mx-4">
+            <div className="hidden xl:block flex-1 max-w-xs mx-4">
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -67,19 +78,18 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-5 text-sm font-medium text-gray-600">
+            <nav className="hidden xl:flex items-center gap-5 text-sm font-medium text-gray-600">
               <a href="#produits" className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">Nos Produits</a>
-              <button onClick={onOpenContact} className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">Nous Contacter</button>
-              
               {user?.role !== 'livreur' && (
-                <button onClick={onOpenTracker} className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                  <span className="text-sm">📍</span> Suivre ma commande
+                <button onClick={onOpenTracker} className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">
+                  Suivre ma commande
                 </button>
               )}
+              <button onClick={onOpenContact} className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">Nous Contacter</button>
             </nav>
 
               {/* Desktop: Utilities + Cart + Auth */}
-              <div className="hidden md:flex items-center gap-3">
+              <div className="hidden xl:flex items-center gap-3 ml-4">
                 {/* Notification Button */}
                 {isLoggedIn && (
                   <button 
@@ -97,31 +107,20 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
                   </button>
                 )}
 
-              {/* Main CTA: Créer mon panier - Only for simple users/clients */}
               {isSimpleUser && (
-                <div className="flex items-center gap-2 mr-1">
-                  <button 
-                    onClick={() => setIsCartBuilderOpen(true)} 
-                    className="relative flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-full text-sm font-black hover:shadow-lg hover:shadow-green-200 transition-all hover:scale-105 active:scale-95 shadow-md uppercase tracking-tighter"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-                    </svg>
-                    <span>Créer mon panier</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setIsCartOpen(true)} 
-                    className="relative flex items-center gap-2 bg-white border-2 border-green-500 text-green-600 px-4 py-2 rounded-full text-sm font-black hover:bg-green-50 transition-all active:scale-95 shadow-sm"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                    {totalItems > 0 && (
-                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-black animate-bounce shadow-md">
-                        {totalItems}
-                      </span>
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={openCartAction}
+                  aria-label={cartActionAriaLabel}
+                  className="relative flex items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-2 text-sm font-black text-white shadow-md shadow-green-200 transition-all duration-200 hover:shadow-lg hover:shadow-green-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                  <span>{cartActionLabel}</span>
+                  {totalItems > 0 && (
+                    <span aria-hidden="true" className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-black shadow-md">
+                      {totalItems}
+                    </span>
+                  )}
+                </button>
               )}
 
               {/* Auth Button with Dropdown */}
@@ -194,7 +193,7 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
             </div>
 
             {/* Mobile: Icons */}
-            <div className="flex md:hidden items-center gap-1">
+            <div className="flex xl:hidden items-center gap-1">
               {isLoggedIn && (
                 <button onClick={() => setShowNotifMenu(true)} className="relative w-10 h-10 flex items-center justify-center text-gray-500">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,9 +203,13 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
                 </button>
               )}
               {isSimpleUser && (
-                <button onClick={() => setIsCartOpen(true)} className="relative w-10 h-10 flex items-center justify-center text-gray-600 hover:text-green-600 transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-                  {totalItems > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">{totalItems}</span>}
+                <button
+                  onClick={openCartAction}
+                  aria-label={cartActionAriaLabel}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md shadow-green-200 transition-all duration-200 hover:shadow-lg hover:shadow-green-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                  {totalItems > 0 && <span aria-hidden="true" className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">{totalItems}</span>}
                 </button>
               )}
               <button onClick={() => setMenuOpen(!menuOpen)} className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-gray-100 transition-colors" aria-label="Menu">
@@ -236,7 +239,7 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
 
       {/* ========== MOBILE MENU ========== */}
       {menuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 xl:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <div className="absolute top-0 right-0 w-[280px] h-full bg-white shadow-2xl animate-slide-in flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -250,12 +253,20 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
             </div>
 
             <nav className="flex-1 p-4 space-y-1">
-              <button onClick={() => { setMenuOpen(false); document.getElementById('produits')?.scrollIntoView({ behavior: 'smooth' }); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"><span className="text-lg">🏪</span>Nos Produits</button>
               {isSimpleUser && (
-                <button onClick={() => closeAnd(() => setIsCartBuilderOpen(true))} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"><span className="text-lg">🛒</span>Créer mon panier</button>
+                <button
+                  onClick={() => closeAnd(openCartAction)}
+                  aria-label={cartActionAriaLabel}
+                  className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-3 text-left text-sm font-bold text-white shadow-md shadow-green-200 transition-all duration-200 hover:shadow-lg hover:shadow-green-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2"
+                >
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                  {cartActionLabel}
+                  {totalItems > 0 && <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">{totalItems}</span>}
+                </button>
               )}
+              <button onClick={() => { setMenuOpen(false); document.getElementById('produits')?.scrollIntoView({ behavior: 'smooth' }); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"><span className="text-lg">🏪</span>Nos Produits</button>
               {user?.role !== 'livreur' && (
-                <button onClick={() => closeAnd(onOpenTracker)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"><span className="text-lg">📍</span>Suivre ma commande</button>
+                <button onClick={() => closeAnd(onOpenTracker)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"><span aria-hidden="true" className="text-lg">📍</span>Suivre ma commande</button>
               )}
 
               {isLoggedIn && (
@@ -264,7 +275,7 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
                 </button>
               )}
 
-              <div className="pt-3 mt-3 border-t border-gray-100 space-y-1">
+              <div className="space-y-1">
                 <button onClick={() => { setMenuOpen(false); onOpenContact?.(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left">
                   <span className="text-lg">📧</span> Nous Contacter
                 </button>
@@ -299,7 +310,7 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
 
             <div className="p-4 border-t border-gray-100 bg-gray-50">
               <div className="space-y-2 text-xs text-gray-500">
-                <p className="flex items-center gap-2"><span>📞</span> +223 77 99 68 58</p>
+                <p className="flex items-center gap-2"><span>📞</span> +223 84 00 72 00</p>
                 <p className="flex items-center gap-2"><span>📧</span> contact@lumoo.ml</p>
                 <p className="flex items-center gap-2"><span>📍</span> Bamako, Mali</p>
               </div>

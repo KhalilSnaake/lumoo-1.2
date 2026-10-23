@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
 import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo, CashLogo } from './PaymentLogos';
 import MaliPhoneInput from './MaliPhoneInput';
+import LocationPicker from './LocationPicker';
 
 const statusLabels: Record<OrderStatus, { label: string; color: string; bg: string; emoji: string }> = {
   en_attente: { label: 'En attente', color: 'text-yellow-700', bg: 'bg-yellow-100', emoji: '⏳' },
@@ -23,7 +24,7 @@ const paymentLogos = {
 };
 
 export default function UserDashboard({ onClose, initialOrderId }: { onClose: () => void; initialOrderId?: string }) {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, updateOwnPassword } = useAuth();
   const { orders, refreshOrders } = useOrders();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('orders');
@@ -34,11 +35,11 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
   // Profile edit form state
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [editAddress, setEditAddress] = useState('');
   const [editCity, setEditCity] = useState('');
+  const [editGps, setEditGps] = useState<{ lat?: number | null; lng?: number | null }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -64,10 +65,10 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
     if (user) {
       setEditName(user.name);
       setEditPhone(user.phone);
-      setEditEmail(user.email);
       setEditAvatar(user.avatar);
       setEditAddress(user.address || '');
       setEditCity(user.city || '');
+      setEditGps({ lat: user.gps_lat, lng: user.gps_lng });
     }
   }, [user, editingProfile]);
 
@@ -130,7 +131,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editName || !editPhone || !editEmail) return;
+    if (!editName.trim() || !editPhone) return;
     
     if (editPassword && editPassword.length < 6) {
       showToast('Le mot de passe doit faire au moins 6 caractères', 'error');
@@ -139,25 +140,34 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
 
     setIsSaving(true);
     try {
-      const updates: any = {
-        name: editName,
+      const result = await updateUser(user.id, {
+        name: editName.trim(),
         phone: editPhone,
-        email: editEmail,
         avatar: editAvatar,
-        address: editAddress,
-        city: editCity
-      };
-      
-      if (editPassword) updates.password = editPassword;
+        address: editAddress.trim(),
+        city: editCity,
+        gps_lat: editGps.lat,
+        gps_lng: editGps.lng,
+      });
+      if (!result) throw new Error('Les informations du profil n’ont pas pu être enregistrées.');
 
-      const result = await updateUser(user.id, updates);
-      if (result) {
-        showToast('Profil mis à jour ✅');
-        setEditingProfile(false);
-        setEditPassword('');
+      if (editPassword) {
+        try {
+          await updateOwnPassword(editPassword);
+        } catch (error) {
+          showToast(
+            'Profil enregistré, mais le mot de passe n’a pas pu être modifié : '
+              + (error instanceof Error ? error.message : 'réessayez.'),
+            'error',
+          );
+          return;
+        }
       }
-    } catch (err) {
-      showToast('Erreur lors de la mise à jour', 'error');
+      showToast('Profil mis à jour ✅');
+      setEditingProfile(false);
+      setEditPassword('');
+    } catch (error) {
+      showToast('Erreur : ' + (error instanceof Error ? error.message : 'Impossible de mettre à jour le profil.'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -211,32 +221,68 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                     </div>
                     <div>
                       <h2 className="text-2xl font-black text-gray-800">{user.name}</h2>
-                      <p className="text-gray-500 font-medium">{user.email}</p>
-                      <p className="text-gray-500 font-medium">{user.phone}</p>
+                      <p className="mt-1 break-all text-sm font-medium text-gray-700">{user.email}</p>
+                      <p className="mt-1 text-sm font-medium text-gray-700">{user.phone}</p>
                       <div className="mt-2 flex gap-2">
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">{user.role === 'admin' ? 'admin' : user.role}</span>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full italic">Depuis {new Date(user.createdAt).toLocaleDateString()}</span>
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-900">{user.role === 'admin' ? 'Administrateur' : user.role === 'livreur' ? 'Livreur' : 'Client'}</span>
+                        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">Inscrit le {new Date(user.createdAt).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
                   </div>
-                  
-                  <button 
+
+                  <dl className="grid grid-cols-1 gap-3 border-t border-gray-100 pt-5 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-gray-50 p-4">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-gray-700">Adresse de livraison</dt>
+                      <dd className="mt-1 break-words text-sm font-medium text-gray-900">{user.address || 'À renseigner dans votre profil'}</dd>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 p-4">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-gray-700">Ville</dt>
+                      <dd className="mt-1 text-sm font-medium text-gray-900">{user.city || 'Non renseignée'}</dd>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 p-4 sm:col-span-2">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-gray-700">Localisation GPS</dt>
+                      <dd className="mt-1 flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-gray-900">
+                        {user.gps_lat != null && user.gps_lng != null
+                          ? <span>{user.gps_lat.toFixed(5)}, {user.gps_lng.toFixed(5)}</span>
+                          : <span>Non renseignée</span>}
+                        {user.gps_lat != null && user.gps_lng != null && (
+                          <a
+                            href={`https://www.google.com/maps?q=${user.gps_lat},${user.gps_lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-11 items-center rounded-lg px-3 font-bold text-green-800 transition-colors hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-700"
+                          >
+                            Voir sur la carte
+                          </a>
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <button
+                    type="button"
                     onClick={() => setEditingProfile(true)}
-                    className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg"
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-green-700 py-3 text-base font-bold text-white shadow-lg transition-colors hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2"
                   >
-                    ✏️ Modifier mes informations
+                    <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 2.651 2.651M8 16l8.862-8.862a1.875 1.875 0 112.652 2.652L10.652 18.65a4 4 0 01-1.697 1.01L5 21l1.34-3.955A4 4 0 017.35 15.35z" />
+                    </svg>
+                    Modifier mes informations
                   </button>
                 </div>
               ) : (
                 <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-black text-gray-800">Modifier mon profil</h2>
-                    <button onClick={() => setEditingProfile(false)} className="text-xs font-bold text-gray-400 hover:text-gray-600">Annuler</button>
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900">Modifier mon profil</h2>
+                      <p className="mt-1 text-sm text-gray-700">Mettez à jour vos coordonnées et votre adresse de livraison.</p>
+                    </div>
+                    <button type="button" onClick={() => setEditingProfile(false)} className="min-h-11 rounded-lg px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500">Annuler</button>
                   </div>
                   
                   <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2 ml-1">Photo de profil</label>
+                      <label className="mb-2 ml-1 block text-sm font-bold text-gray-800">Photo de profil</label>
                       <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 flex items-center justify-center bg-gray-50 text-2xl shrink-0 text-gray-300 font-bold">
                           {isUploading ? (
@@ -251,7 +297,7 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                         <button 
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
+                          className="min-h-11 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-800 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-700"
                         >
                           {editAvatar.startsWith('http') ? 'Changer la photo' : 'Ajouter une photo'}
                         </button>
@@ -259,28 +305,33 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nom complet</label>
+                      <label htmlFor="profile-name" className="mb-1 block text-sm font-semibold text-gray-800">Nom complet</label>
                       <input 
+                        id="profile-name"
                         type="text" 
                         value={editName} 
                         onChange={e => setEditName(e.target.value)} 
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                        maxLength={120}
+                        autoComplete="name"
+                        className="min-h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-base text-gray-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Email</label>
+                      <label htmlFor="profile-email" className="mb-1 block text-sm font-semibold text-gray-800">Adresse e-mail (non modifiable)</label>
                       <input 
+                        id="profile-email"
                         type="email" 
-                        value={editEmail} 
-                        onChange={e => setEditEmail(e.target.value)} 
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none"
-                        required
+                        value={user.email}
+                        readOnly
+                        autoComplete="email"
+                        className="min-h-11 w-full rounded-xl border border-gray-300 bg-gray-100 px-4 py-3 text-base text-gray-700"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Téléphone</label>
+                      <label htmlFor="profile-phone" className="mb-1 block text-sm font-semibold text-gray-800">Téléphone</label>
                       <MaliPhoneInput 
+                        id="profile-phone"
                         value={editPhone} 
                         onChange={setEditPhone} 
                         required 
@@ -288,41 +339,79 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Adresse de livraison par défaut</label>
+                      <label htmlFor="profile-address" className="mb-1 block text-sm font-semibold text-gray-800">Adresse de livraison par défaut</label>
                       <textarea
+                        id="profile-address"
                         value={editAddress}
                         onChange={e => setEditAddress(e.target.value)}
+                        autoComplete="street-address"
+                        maxLength={500}
+                        minLength={5}
                         rows={2}
                         placeholder="Ex: Badalabougou, près de la pharmacie..."
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none resize-none"
+                        className="w-full resize-y rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-base text-gray-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Ville</label>
+                      <label htmlFor="profile-city" className="mb-1 block text-sm font-semibold text-gray-800">Ville</label>
                       <select
+                        id="profile-city"
                         value={editCity}
                         onChange={e => setEditCity(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                        className="min-h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-base text-gray-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
                       >
                         <option value="">Sélectionner une ville</option>
                         {['Bamako', 'Sikasso', 'Kayes', 'Ségou', 'Mopti', 'Gao', 'Tombouctou', 'Koulikoro'].map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
 
+                    <section className="space-y-3 rounded-2xl border border-green-100 bg-green-50/60 p-4" aria-labelledby="profile-gps-title">
+                      <div>
+                        <h3 id="profile-gps-title" className="text-base font-bold text-gray-900">Localisation GPS (facultatif)</h3>
+                        <p className="mt-1 text-sm leading-6 text-gray-700">
+                          Partagez votre position pour aider le livreur à trouver votre adresse. Votre navigateur vous demandera l’autorisation ; la position ne sera enregistrée qu’après avoir sauvegardé le profil.
+                        </p>
+                      </div>
+                      <LocationPicker
+                        currentLat={editGps.lat ?? undefined}
+                        currentLng={editGps.lng ?? undefined}
+                        onLocationSelect={(lat, lng) => setEditGps({ lat, lng })}
+                      />
+                      {editGps.lat != null && editGps.lng != null && (
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-800">
+                            Position sélectionnée : {editGps.lat.toFixed(5)}, {editGps.lng.toFixed(5)}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setEditGps({ lat: null, lng: null })}
+                            className="min-h-11 rounded-lg px-3 text-sm font-bold text-red-800 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-700"
+                          >
+                            Retirer la position
+                          </button>
+                        </div>
+                      )}
+                    </section>
+
                     <div className="pt-2">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Nouveau mot de passe (Facultatif)</label>
+                      <label htmlFor="profile-password" className="mb-1 block text-sm font-semibold text-gray-800">Nouveau mot de passe (facultatif)</label>
                       <div className="relative">
                         <input 
+                          id="profile-password"
                           type={showPassword ? "text" : "password"} 
                           value={editPassword} 
                           onChange={e => setEditPassword(e.target.value)} 
                           placeholder="Laisser vide pour garder l'actuel"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none pr-12"
+                          autoComplete="new-password"
+                          minLength={6}
+                          maxLength={128}
+                          className="min-h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 pr-12 text-base text-gray-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
                         />
                         <button 
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                          className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-700"
                         >
                           {showPassword ? (
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.005 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.076m1.406-1.406A10.05 10.005 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21m-4.225-4.225L3 3" /></svg>
@@ -336,9 +425,9 @@ export default function UserDashboard({ onClose, initialOrderId }: { onClose: ()
                     <button 
                       type="submit"
                       disabled={isSaving}
-                      className="w-full py-4 bg-green-600 text-white font-bold rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-green-700 py-4 text-base font-bold text-white shadow-lg transition-colors hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
                     >
-                      {isSaving ? 'Enregistrement...' : 'Sauvegarder les modifications'}
+                      {isSaving ? 'Enregistrement…' : 'Enregistrer les modifications'}
                     </button>
                   </form>
                 </div>

@@ -4,6 +4,34 @@ import { useToast } from '../context/ToastContext';
 import Logo from './Logo';
 import MaliPhoneInput from './MaliPhoneInput';
 
+function PasswordVisibilityButton({ visible, inputId, onToggle }: { visible: boolean; inputId: string; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+      aria-controls={inputId}
+      aria-pressed={visible}
+      className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-gray-500 transition-colors duration-200 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        {visible ? (
+          <>
+            <path d="M3 3l18 18" />
+            <path d="M10.6 10.6a2 2 0 002.8 2.8" />
+            <path d="M9.9 5.2A10.8 10.8 0 0112 5c5 0 8.3 4.5 9 6-.3.7-1.1 1.8-2.3 2.9" />
+            <path d="M6.2 6.2C4.4 7.4 3.3 9.2 3 11c.7 1.5 4 6 9 6 1 0 1.9-.2 2.8-.5" />
+          </>
+        ) : (
+          <>
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
+            <circle cx="12" cy="12" r="3" />
+          </>
+        )}
+      </svg>
+    </button>
+  );
+}
 
 export default function AuthPage() {
   const { login, register } = useAuth();
@@ -22,13 +50,17 @@ export default function AuthPage() {
   // Login fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Register fields
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
+  const [regAddress, setRegAddress] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirm, setShowRegConfirm] = useState(false);
   const regRole = 'client' as const;
 
   const handleTabChange = (newMode: 'login' | 'register' | 'reset') => {
@@ -77,7 +109,7 @@ export default function AuthPage() {
   const handleRegister = async (e: React.FormEvent) => {
 
     e.preventDefault();
-    if (!regName || !regEmail || !regPhone || !regPassword) return;
+    if (!regName || !regEmail || !regPhone || !regAddress.trim() || !regPassword) return;
     setError('');
 
     if (regPassword !== regConfirm) {
@@ -97,18 +129,24 @@ export default function AuthPage() {
     
     setLoading(true);
     try {
-      const { user, needsConfirmation } = await register({ name: regName, email: regEmail, phone: regPhone, password: regPassword, role: regRole });
+      const { user, needsConfirmation } = await register({
+        name: regName,
+        email: regEmail,
+        phone: regPhone,
+        password: regPassword,
+        role: regRole,
+        address: regAddress.trim(),
+      });
       if (needsConfirmation) {
         setRegSent(true);
       } else if (user) {
         showToast(`Compte créé avec succès ! Bienvenue ${user.name}`);
       } else {
-        setError('Erreur lors de l\'inscription (réponse vide)');
+        setError("Erreur lors de l'inscription (réponse vide)");
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'inscription');
+      setError(err.message || "Erreur lors de la création du compte");
     } finally {
-
       setLoading(false);
     }
   };
@@ -179,15 +217,23 @@ export default function AuthPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">🔒 Mot de passe</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
+                <label htmlFor="login-password" className="block text-xs font-semibold text-gray-600 mb-1.5">🔒 Mot de passe</label>
+                <div className="relative">
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                  <PasswordVisibilityButton
+                    visible={showPassword}
+                    inputId="login-password"
+                    onToggle={() => setShowPassword(visible => !visible)}
+                  />
+                </div>
               </div>
 
               <button
@@ -302,34 +348,66 @@ export default function AuthPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">📞 Téléphone</label>
+                <label htmlFor="register-phone" className="block text-xs font-semibold text-gray-600 mb-1.5">Téléphone</label>
                 <MaliPhoneInput 
+                  id="register-phone"
                   value={regPhone} 
                   onChange={setRegPhone}
                   required 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">🔒 Mot de passe</label>
-                <input
-                  type="password"
-                  value={regPassword}
-                  onChange={e => setRegPassword(e.target.value)}
-                  placeholder="Minimum 6 caractères"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                <label htmlFor="register-address" className="mb-1.5 block text-sm font-semibold text-gray-700">Adresse complète</label>
+                <textarea
+                  id="register-address"
+                  value={regAddress}
+                  onChange={event => setRegAddress(event.target.value)}
+                  placeholder="Quartier, rue et repère"
+                  autoComplete="street-address"
+                  minLength={5}
+                  maxLength={500}
+                  rows={2}
+                  className="w-full resize-y rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900 outline-none transition-colors focus:border-green-600 focus:ring-2 focus:ring-green-100"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">🔒 Confirmer le mot de passe</label>
-                <input
-                  type="password"
-                  value={regConfirm}
-                  onChange={e => setRegConfirm(e.target.value)}
-                  placeholder="Retapez le mot de passe"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
+                <label htmlFor="register-password" className="block text-xs font-semibold text-gray-600 mb-1.5">🔒 Mot de passe</label>
+                <div className="relative">
+                  <input
+                    id="register-password"
+                    type={showRegPassword ? 'text' : 'password'}
+                    value={regPassword}
+                    onChange={e => setRegPassword(e.target.value)}
+                    placeholder="Minimum 6 caractères"
+                    className="w-full px-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                  <PasswordVisibilityButton
+                    visible={showRegPassword}
+                    inputId="register-password"
+                    onToggle={() => setShowRegPassword(visible => !visible)}
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="register-password-confirm" className="block text-xs font-semibold text-gray-600 mb-1.5">🔒 Confirmer le mot de passe</label>
+                <div className="relative">
+                  <input
+                    id="register-password-confirm"
+                    type={showRegConfirm ? 'text' : 'password'}
+                    value={regConfirm}
+                    onChange={e => setRegConfirm(e.target.value)}
+                    placeholder="Retapez le mot de passe"
+                    className="w-full px-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  />
+                  <PasswordVisibilityButton
+                    visible={showRegConfirm}
+                    inputId="register-password-confirm"
+                    onToggle={() => setShowRegConfirm(visible => !visible)}
+                  />
+                </div>
               </div>
 
               <button

@@ -1,5 +1,5 @@
 export default function WhatsAppButton() {
-  const phone = '22377996858';
+  const phone = '22384007200';
   const catalogUrl = `https://wa.me/c/${phone}`;
 
   return (

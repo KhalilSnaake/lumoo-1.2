@@ -1,23 +1,27 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface PhoneInputProps {
   value: string;
   onChange: (value: string) => void;
+  id?: string;
   placeholder?: string;
   className?: string;
   required?: boolean;
 }
 
-export default function MaliPhoneInput({ value, onChange, placeholder = "77 99 68 58", className = "", required = false }: PhoneInputProps) {
-  // Extract only the 8 digits
-  const displayValue = value.replace('+223 ', '').replace(/\s/g, '').slice(0, 8);
+export default function MaliPhoneInput({ value, onChange, id, placeholder = "84 00 72 00", className = "", required = false }: PhoneInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const digits = value.replace(/^\+223\s*/, '').replace(/\D/g, '').slice(0, 8);
+  const displayValue = digits.match(/.{1,2}/g)?.join(' ') ?? '';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let input = e.target.value.replace(/\D/g, ''); // Keep only digits
-    if (input.length > 8) input = input.slice(0, 8); // Limit to 8 digits
-    
-    // Always store full international format in state: +223 XXXXXXXX
+    const rawValue = e.target.value;
+    const input = rawValue.replace(/^\+223\s*/, '').replace(/\D/g, '').slice(0, 8);
+    const digitsBeforeCursor = rawValue.slice(0, e.target.selectionStart ?? rawValue.length).replace(/\D/g, '').slice(0, 8).length;
+    const formattedCursor = digitsBeforeCursor + Math.max(0, Math.ceil(digitsBeforeCursor / 2) - 1);
+
     onChange(input ? `+223 ${input}` : '');
+    requestAnimationFrame(() => inputRef.current?.setSelectionRange(formattedCursor, formattedCursor));
   };
 
   return (
@@ -36,18 +40,22 @@ export default function MaliPhoneInput({ value, onChange, placeholder = "77 99 6
       </div>
       
       <input
+        ref={inputRef}
+        id={id}
         type="tel"
+        inputMode="numeric"
         value={displayValue}
         onChange={handleChange}
         placeholder={placeholder}
         required={required}
         autoComplete="tel-national"
-        className="w-full pl-20 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-gray-800 placeholder:text-gray-300 focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all"
+        maxLength={11}
+        className="w-full min-h-11 pl-24 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base font-bold text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-green-600 focus:bg-white outline-none transition-colors duration-200"
       />
       
       {/* 8-digits indicator (optional visual hint) */}
-      <div className="absolute right-3 text-[8px] font-bold text-gray-300 uppercase tracking-widest pointer-events-none">
-        {displayValue.length}/8
+      <div aria-hidden="true" className="absolute right-3 text-xs font-semibold text-gray-600 pointer-events-none">
+        {digits.length}/8
       </div>
     </div>
   );

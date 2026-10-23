@@ -104,7 +104,7 @@ export default function Footer({
             <h4 className="font-bold text-white mb-4 text-sm">Contact</h4>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
-                <span>📞</span> +223 77 99 68 58
+                <span>📞</span> +223 84 00 72 00
               </li>
               <li className="flex items-center gap-2">
                 <span>📧</span> contact@lumoo.ml

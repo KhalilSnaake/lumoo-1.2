@@ -3,6 +3,7 @@ import type { Product } from '@lumoo/core';
 import { useToast } from '../context/ToastContext';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ProductModal from './ProductModal';
+import { getEffectiveProductPrice, hasPromoPrice } from '@lumoo/core';
 
 export default function PopularProducts() {
   const { addToCart } = useCart();
@@ -163,11 +164,18 @@ export default function PopularProducts() {
           >
             <div className="h-36 bg-gray-50 flex items-center justify-center relative overflow-hidden">
               <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
-              {product.category === 'legumes' && (
-                <span className="absolute top-2 left-2 bg-green-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase">
-                  Frais
-                </span>
-              )}
+              <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+                {product.category === 'legumes' && (
+                  <span className="rounded-full bg-green-500 px-2 py-0.5 text-[8px] font-bold uppercase text-white">
+                    Frais
+                  </span>
+                )}
+                {hasPromoPrice(product) && (
+                  <span className="rounded-full bg-red-700 px-2 py-0.5 text-[8px] font-bold uppercase text-white">
+                    Promo
+                  </span>
+                )}
+              </div>
               <span className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
                 🔥 TOP
               </span>
@@ -177,7 +185,10 @@ export default function PopularProducts() {
               <h4 className="text-sm font-bold text-gray-800 truncate">{product.name}</h4>
               <div className="flex items-center justify-between mt-2">
                 <div>
-                  <span className="text-base font-extrabold text-green-600">{formatPrice(product.price)}</span>
+                  {hasPromoPrice(product) && (
+                    <span className="mr-1 text-[10px] font-semibold text-gray-400 line-through">{formatPrice(product.price)}</span>
+                  )}
+                  <span className="text-base font-extrabold text-green-600">{formatPrice(getEffectiveProductPrice(product))}</span>
                   <span className="text-[10px] text-gray-400 ml-0.5 font-bold">F</span>
                 </div>
                 <button

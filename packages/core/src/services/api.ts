@@ -1,5 +1,6 @@
 import { Order, OrderStatus, CreateOrderInput, PaymentMethod } from '../types';
 import { getSupabase } from '../lib/supabaseClient';
+import { getEffectiveProductPrice } from '../utils/pricing';
 
 function generateOrderId(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -50,7 +51,7 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
   const now = new Date().toISOString();
   
   const totalPrice = input.items.reduce((sum, item) => {
-    return sum + (item.product.price * item.quantity);
+    return sum + (getEffectiveProductPrice(item.product) * item.quantity);
   }, 0);
 
   // Insert order
@@ -80,7 +81,7 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
     order_id: orderId,
     product_id: item.product.id,
     name: item.product.name,
-    price: item.product.price,
+    price: getEffectiveProductPrice(item.product),
     quantity: item.quantity,
     unit: item.product.unit,
   }));

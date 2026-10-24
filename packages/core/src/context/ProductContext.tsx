@@ -39,6 +39,7 @@ function rowToProduct(row: any): Product {
     name: row.name,
     description: row.description,
     price: row.price,
+    promo_price: row.promo_price ?? null,
     unit: row.unit,
     category_id: row.category_id ?? null,
     category: categoryObj,
@@ -177,6 +178,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
         name: p.name,
         description: p.description,
         price: p.price,
+        promo_price: p.promo_price ?? null,
         unit: p.unit,
         category_id: categoryId,
         image_url: p.image_url,
@@ -191,7 +193,13 @@ export function ProductProvider({ children }: { children: ReactNode }) {
       .single();
 
 
-    if (error || !data) return null;
+    if (error) {
+      if (/promo_price/i.test(error.message ?? '') && /column .* does not exist/i.test(error.message ?? '')) {
+        throw new Error('La colonne du prix promo manque en base. Appliquez la migration Supabase avant d’ajouter un produit en promotion.');
+      }
+      throw error;
+    }
+    if (!data) throw new Error('Aucune donnée retournée après la création du produit.');
     const newProd = rowToProduct(data);
     setProducts((prev) => [newProd, ...prev]);
     return newProd;
@@ -204,6 +212,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
     if (updates.price !== undefined) dbUpdates.price = updates.price;
+    if (updates.promo_price !== undefined) dbUpdates.promo_price = updates.promo_price;
     if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
     if (updates.category_id !== undefined) {
       dbUpdates.category_id = updates.category_id;
@@ -233,6 +242,9 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     if (error && /column .* does not exist/i.test(error.message ?? '')) {
       const m = error.message?.match(/column ["']?([a-zA-Z0-9_]+)["']? does not exist/i);
       const missingCol = m?.[1];
+      if (missingCol === 'promo_price') {
+        throw new Error('La colonne du prix promo manque en base. Appliquez la migration Supabase avant de modifier les promotions.');
+      }
       if (missingCol && (missingCol in dbUpdates)) {
         console.warn(`[updateProduct] Colonne "${missingCol}" absente en base — retry sans ce champ. Lancez add_popular_column.sql pour corriger.`);
         const { [missingCol]: _omit, ...dbUpdatesFixed } = dbUpdates;

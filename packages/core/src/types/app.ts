@@ -5,6 +5,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  promo_price?: number | null;
   unit: string;
   category_id?: number | null;
   // `category` peut être un objet Category (jointure Supabase) OU un slug

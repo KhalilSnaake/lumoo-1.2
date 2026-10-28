@@ -3,7 +3,7 @@ import { User, RegisterInput, AuthContextType } from '../types/auth';
 import { getSupabase } from '../lib/supabaseClient';
 import {
   apiLogin, apiRegister, apiCreateUser, apiLogout, apiGetCurrentUser,
-  apiGetAllUsers, apiUpdateUser, apiDeleteUser, apiUpdateOwnPassword,
+  apiGetAllUsers, apiUpdateUser, apiDeleteUser, apiUpdateOwnPassword, apiUpdateLivreur,
 } from '../services/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -78,6 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   }, [refreshUsers]);
 
+  const updateLivreur = useCallback(async (livreurId: string, updates: Partial<any>) => {
+    const success = await apiUpdateLivreur(livreurId, updates);
+    if (success) refreshUsers();
+    return success;
+  }, [refreshUsers]);
+
+  const deleteLivreur = useCallback(async (livreurId: string) => {
+    await apiDeleteUser(livreurId);
+    refreshUsers();
+    return true;
+  }, [refreshUsers]);
+
   const clearPasswordRecovery = useCallback(() => setPasswordRecovery(false), []);
   const updateOwnPassword = useCallback(async (newPassword: string) => {
     await apiUpdateOwnPassword(newPassword);
@@ -87,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, users, login, register, createUser, logout, updateUser, deleteUser,
+      user, users, login, register, createUser, logout, updateUser, deleteUser, updateLivreur, deleteLivreur,
       isLoggedIn: !!user,
       isAdmin: user?.role === 'admin',
       isLivreur: user?.role === 'livreur',

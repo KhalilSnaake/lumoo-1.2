@@ -120,9 +120,57 @@ export async function apiUpdateUser(id: string, updates: Partial<User>): Promise
   return toUser(data.id, data.email, data);
 }
 
-// Option simple : suppression de compte non disponible (clé service requise). Utiliser le blocage.
-export async function apiDeleteUser(_id: string): Promise<boolean> {
-  return false;
+// Update driver (livreur) information including guarantor data.
+export async function apiUpdateLivreur(
+  livreurId: string,
+  updates: Partial<any>,
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const profileUpdates: any = {};
+  if (updates.name !== undefined) profileUpdates.name = updates.name;
+  if (updates.phone !== undefined) profileUpdates.phone = updates.phone;
+  if (updates.address !== undefined) profileUpdates.address = updates.address;
+
+  // Update profile if any profile fields changed
+  if (Object.keys(profileUpdates).length > 0) {
+    const { error } = await supabase
+      .from('profiles')
+      .update(profileUpdates)
+      .eq('id', livreurId);
+    if (error) return false;
+  }
+
+  // Update guarantor data in livreur_verifications table
+  if (updates.guarantor_name || updates.guarantor_phone || updates.guarantor_address) {
+    const { error } = await supabase
+      .from('livreur_verifications')
+      .update({
+        guarantor_name: updates.guarantor_name,
+        guarantor_phone: updates.guarantor_phone,
+        guarantor_address: updates.guarantor_address,
+      })
+      .eq('livreur_id', livreurId);
+    if (error) return false;
+  }
+
+  return true;
+}
+
+// Admin deletion with RLS protection (SECURITY DEFINER SQL function).
+export async function apiDeleteUserAsAdmin(targetId: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('delete_user_by_admin', { target_id: targetId });
+  if (error) throw new Error(error.message || 'Erreur lors de la suppression du compte');
+}
+
+// Wrapper for admin deletion.
+export async function apiDeleteUser(id: string): Promise<boolean> {
+  try {
+    await apiDeleteUserAsAdmin(id);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function seedDefaultAdmin() {

@@ -12,6 +12,8 @@ export interface User {
   blocked: boolean;
   address?: string;
   city?: string;
+  gps_lat?: number;
+  gps_lng?: number;
 }
 
 export interface AuthContextType {
@@ -23,6 +25,8 @@ export interface AuthContextType {
   logout: () => void;
   updateUser: (id: string, updates: Partial<User>) => Promise<User | null>;
   deleteUser: (id: string) => Promise<boolean>;
+  updateLivreur: (livreurId: string, updates: Partial<any>) => Promise<boolean>;
+  deleteLivreur: (livreurId: string) => Promise<boolean>;
   isLoggedIn: boolean;
   isAdmin: boolean;
   isLivreur: boolean;
@@ -40,4 +44,5 @@ export interface RegisterInput {
   phone: string;
   password: string;
   role: UserRole;
+  address?: string;
 }

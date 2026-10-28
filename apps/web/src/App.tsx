@@ -30,6 +30,7 @@ import Footer from './components/Footer';
 import OrderTracker from './components/OrderTracker';
 import AdBanner from './components/AdBanner';
 import LegalModal from './components/LegalModal';
+import AboutPage from './components/AboutPage';
 import AccountDeletionModal from './components/AccountDeletionModal';
 import ContactForm from './components/ContactForm';
 import ResetPasswordModal from './components/ResetPasswordModal';
@@ -178,8 +179,11 @@ function MainApp() {
       {/* Contact Form Modal */}
       {showContactForm && <ContactForm onClose={() => setShowContactForm(false)} />}
 
+      {/* À propos (couleurs + design spécifiques Lumoo) */}
+      {legalSlug === 'apropos' && <AboutPage onClose={closeLegal} />}
+
       {/* Documents légaux (CGU/CGV/confidentialité/mentions) — source partagée avec le mobile */}
-      {legalSlug && <LegalModal slug={legalSlug} onClose={closeLegal} />}
+      {legalSlug && legalSlug !== 'apropos' && <LegalModal slug={legalSlug} onClose={closeLegal} />}
 
       {/* Suppression de compte (URL publique ?delete-account — exigence Google Play) */}
       {showDeletion && <AccountDeletionModal onClose={closeDeletion} />}

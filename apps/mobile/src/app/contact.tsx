@@ -24,9 +24,9 @@ const SUBJECTS = [
   { key: "autre", label: "Autre" },
 ];
 
-const PHONE = "+22377996858";
+const PHONE = "+22384007200";
 const EMAIL = "contact@lumoo.ml";
-const WHATSAPP = "https://wa.me/22377996858";
+const WHATSAPP = "https://wa.me/22384007200";
 
 export default function ContactScreen() {
   const { user } = useAuth();

@@ -32,22 +32,22 @@ type TrackedItem = { name: string; emoji?: string; price: number; quantity: numb
 type TrackedOrder = {
   id: string;
   status: OrderStatus;
-  deliveryCode: string;
-  customerName: string;
-  address: string;
+  limited?: boolean;
+  deliveryCode?: string;
+  customerName?: string;
+  address?: string;
   city: string;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  gps_lat?: number | null;
+  gps_lng?: number | null;
   paymentMethod: PaymentMethod;
   totalPrice: number;
   createdAt: string;
-  livreur: { name: string; phone: string } | null;
+  livreur?: { name: string; phone: string } | null;
   items: TrackedItem[];
 };
 
 export default function OrderTracker({ onClose }: { onClose: () => void }) {
   const [orderId, setOrderId] = useState('');
-  const [code, setCode] = useState('');
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState('');
   const [searching, setSearching] = useState(false);
@@ -62,16 +62,15 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
   };
 
   const handleSearch = async () => {
-    if (!orderId.trim() || !code.trim()) return;
+    if (!orderId.trim()) return;
     setSearching(true);
     setError('');
     setOrder(null);
 
-    // Lecture sécurisée : la fonction SQL ne renvoie la commande que si
-    // le numéro ET le code de livraison correspondent (RLS contournée de façon contrôlée).
-    const data = await apiTrackOrder(orderId, code);
+    // Lecture sécurisée : numéro seul → vue limitée (sans données personnelles ni code de livraison).
+    const data = await apiTrackOrder(orderId);
     if (!data) {
-      setError('Commande introuvable. Vérifiez le numéro et le code de livraison.');
+      setError('Commande introuvable. Vérifiez le numéro de commande.');
     } else {
       setOrder(data as TrackedOrder);
     }
@@ -91,7 +90,7 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
         <div className="sticky top-0 bg-white rounded-t-3xl border-b border-gray-100 p-5 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-extrabold text-gray-800">📍 Suivi de commande</h2>
-            <p className="text-xs text-gray-400">Numéro de commande + code de livraison</p>
+            <p className="text-xs text-gray-400">Entrez votre numéro de commande</p>
           </div>
           <button
             onClick={onClose}
@@ -105,27 +104,20 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
 
         {/* Search */}
         <div className="p-5 space-y-2">
-          <input
-            type="text"
-            value={orderId}
-            onChange={e => setOrderId(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="N° commande — Ex: LUM-M5X7KQ-A2B4"
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
           <div className="flex gap-2">
             <input
               type="text"
-              inputMode="numeric"
-              value={code}
-              onChange={e => setCode(e.target.value)}
+              value={orderId}
+              onChange={e => setOrderId(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Code de livraison (4 chiffres)"
+              placeholder="N° commande — Ex: LUM-M5X7KQ-A2B4"
+              aria-label="Numéro de commande"
               className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             <button
               onClick={handleSearch}
-              disabled={searching || !orderId.trim() || !code.trim()}
+              disabled={searching || !orderId.trim()}
+              aria-label="Rechercher"
               className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-green-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {searching ? (
@@ -175,12 +167,14 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
 
             {/* Order details */}
             <div className="bg-gray-50 rounded-2xl p-4 space-y-3 relative overflow-hidden">
-              <div className="absolute top-0 right-0">
-                <div className="bg-green-600 text-white px-3 py-1.5 rounded-bl-2xl shadow-lg animate-pulse">
-                  <p className="text-[8px] font-black uppercase tracking-tighter opacity-80">Code Livraison</p>
-                  <p className="text-lg font-black font-mono leading-none tracking-widest">{order.deliveryCode}</p>
+              {order.deliveryCode && (
+                <div className="absolute top-0 right-0">
+                  <div className="bg-green-600 text-white px-3 py-1.5 rounded-bl-2xl shadow-lg animate-pulse">
+                    <p className="text-[8px] font-black uppercase tracking-tighter opacity-80">Code Livraison</p>
+                    <p className="text-lg font-black font-mono leading-none tracking-widest">{order.deliveryCode}</p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400">N° Commande</span>
                 <span className="font-mono font-bold text-gray-700">{order.id}</span>
@@ -189,14 +183,16 @@ export default function OrderTracker({ onClose }: { onClose: () => void }) {
                 <span className="text-gray-400">Date</span>
                 <span className="text-gray-700">{formatDate(order.createdAt)}</span>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Client</span>
-                <span className="text-gray-700">{order.customerName}</span>
-              </div>
+              {order.customerName && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Client</span>
+                  <span className="text-gray-700">{order.customerName}</span>
+                </div>
+              )}
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400">Adresse</span>
                 <div className="text-right">
-                  <span className="text-gray-700 block">{order.address}, {order.city}</span>
+                  <span className="text-gray-700 block">{order.address ? `${order.address}, ${order.city}` : order.city}</span>
                   {order.gps_lat && order.gps_lng && (
                     <a
                       href={`https://www.google.com/maps?q=${order.gps_lat},${order.gps_lng}`}

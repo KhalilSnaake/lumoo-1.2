@@ -1,6 +1,6 @@
 import { Linking } from "react-native";
 
-export const WHATSAPP_PHONE = "22377996858";
+export const WHATSAPP_PHONE = "22384007200";
 
 // Purs (testables) :
 export const catalogUrl = () => `https://wa.me/c/${WHATSAPP_PHONE}`;

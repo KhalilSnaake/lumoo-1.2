@@ -6,13 +6,11 @@ import { LEGAL_DOC_LINKS } from '@lumoo/core';
 export default function Footer({
   onOpenTracker,
   onOpenLegal,
-  onNavigateAbout,
   products = [],
   categories = [],
 }: {
   onOpenTracker: () => void;
   onOpenLegal: (slug: string) => void;
-  onNavigateAbout?: () => void;
   products?: Product[];
   categories?: Category[];
 }) {
@@ -131,21 +129,12 @@ export default function Footer({
 
         {/* Liens légaux (CGU / CGV / Confidentialité / Mentions) + À propos */}
         <div className="border-t border-gray-800 mt-10 pt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-          <a
-            href="/a-propos"
-            onClick={(e) => {
-              e.preventDefault();
-              if (onNavigateAbout) {
-                onNavigateAbout();
-              } else {
-                window.history.pushState({}, '', '/a-propos');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }
-            }}
+          <button
+            onClick={() => onOpenLegal('apropos')}
             className="text-xs font-semibold text-gray-300 hover:text-green-400 transition-colors"
           >
             À propos
-          </a>
+          </button>
           {LEGAL_DOC_LINKS.map((l) => (
             <button
               key={l.slug}

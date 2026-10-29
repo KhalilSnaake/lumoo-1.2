@@ -178,7 +178,6 @@ begin
   into v_items
   from public.order_items oi
   where oi.order_id = v_order.id;
-
   -- Livreur (si assigné)
   if v_order.livreur_id is not null then
     select jsonb_build_object('name', p.name, 'phone', p.phone)
@@ -260,6 +259,8 @@ $$;
 revoke all on function public.get_livreur_orders() from public, anon;
 grant execute on function public.get_livreur_orders() to authenticated;
 
+alter table public.orders add column if not exists delivery_attempts integer not null default 0;
+
 -- Validation de livraison côté serveur par le livreur
 drop function if exists public.confirm_delivery(text, text, text) cascade;
 drop function if exists public.confirm_delivery cascade;
@@ -274,18 +275,30 @@ security definer
 set search_path = public
 as $$
 declare
-  v_updated integer;
+  v_order public.orders%rowtype;
 begin
+  select * into v_order from public.orders
+  where upper(trim(id)) = upper(trim(p_order_id))
+    and (livreur_id::text = auth.uid()::text or public.is_admin())
+  for update;
+  if not found then return false; end if;
+
+  -- Anti force brute (code à 4 chiffres) : verrouillage après 5 échecs.
+  if coalesce(v_order.delivery_attempts, 0) >= 5 and not public.is_admin() then
+    return false;
+  end if;
+
+  if trim(v_order.delivery_code) <> trim(p_delivery_code) then
+    update public.orders set delivery_attempts = coalesce(delivery_attempts, 0) + 1 where id = v_order.id;
+    return false;
+  end if;
+
   update public.orders
   set status = 'livree',
       received_by = trim(p_received_by),
       updated_at = now()
-  where upper(trim(id)) = upper(trim(p_order_id))
-    and trim(delivery_code) = trim(p_delivery_code)
-    and (livreur_id::text = auth.uid()::text or public.is_admin());
-
-  get diagnostics v_updated = row_count;
-  return v_updated > 0;
+  where id = v_order.id;
+  return true;
 end;
 $$;
 revoke all on function public.confirm_delivery(text, text, text) from public, anon;
@@ -418,30 +431,30 @@ create policy "notifications_insert_admin" on public.notifications
 -- ============================================================================
 -- 7. STORAGE POLICIES : Protection contre la suppression arbitraire de fichiers
 -- ============================================================================
-do $$
-begin
-  -- Bucket documents : seul le propriétaire ou l'admin peut modifier/supprimer
-  perform pg_catalog.drop_policy_if_exists('storage', 'objects', 'Allow authenticated update to documents bucket');
-  perform pg_catalog.drop_policy_if_exists('storage', 'objects', 'Allow authenticated delete to documents bucket');
+-- Bucket documents (preuves de paiement) : PRIVÉ, accès admin uniquement,
+-- consultation via URL signée (createSignedUrl).
+update storage.buckets set public = false where id = 'documents';
 
-  create policy "Allow authenticated update to documents bucket"
-  on storage.objects for update
-  using (
-    auth.uid() is not null
-    and bucket_id = 'documents'
-    and (owner::text = auth.uid()::text or public.is_admin())
-  );
+drop policy if exists "Allow authenticated upload to documents bucket" on storage.objects;
+drop policy if exists "Allow public read from documents bucket" on storage.objects;
+drop policy if exists "Allow authenticated update to documents bucket" on storage.objects;
+drop policy if exists "Allow authenticated delete to documents bucket" on storage.objects;
+drop policy if exists "documents_upload_policy" on storage.objects;
+drop policy if exists "documents_read_policy" on storage.objects;
+drop policy if exists "documents_admin_insert" on storage.objects;
+drop policy if exists "documents_admin_select" on storage.objects;
+drop policy if exists "documents_admin_update" on storage.objects;
+drop policy if exists "documents_admin_delete" on storage.objects;
 
-  create policy "Allow authenticated delete to documents bucket"
-  on storage.objects for delete
-  using (
-    auth.uid() is not null
-    and bucket_id = 'documents'
-    and (owner::text = auth.uid()::text or public.is_admin())
-  );
-exception when others then
-  raise notice 'Note sur storage : les tables storage peuvent être gérées via le dashboard Supabase.';
-end $$;
+create policy "documents_admin_insert" on storage.objects
+  for insert with check (bucket_id = 'documents' and public.is_admin());
+create policy "documents_admin_select" on storage.objects
+  for select using (bucket_id = 'documents' and public.is_admin());
+create policy "documents_admin_update" on storage.objects
+  for update using (bucket_id = 'documents' and public.is_admin())
+  with check (bucket_id = 'documents' and public.is_admin());
+create policy "documents_admin_delete" on storage.objects
+  for delete using (bucket_id = 'documents' and public.is_admin());
 
 -- Rafraîchir le cache de schéma PostgREST
 notify pgrst, 'reload schema';

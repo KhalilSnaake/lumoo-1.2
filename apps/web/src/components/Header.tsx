@@ -12,7 +12,6 @@ export default function Header({
   onOpenOrder, 
   onOpenContact,
   onNavigateHome,
-  onNavigateAbout,
 }: { 
   onOpenAdmin: (orderId?: string) => void; 
   onOpenTracker: () => void; 
@@ -20,7 +19,6 @@ export default function Header({
   onOpenOrder?: (id: string) => void; 
   onOpenContact?: () => void;
   onNavigateHome?: () => void;
-  onNavigateAbout?: () => void;
 }) {
   const { totalItems, setIsCartOpen, setIsCartBuilderOpen } = useCart();
   const { user, isLoggedIn, logout, setShowAuth } = useAuth();
@@ -116,16 +114,6 @@ export default function Header({
                 className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider"
               >
                 Nos Produits
-              </a>
-              <a
-                href="/a-propos"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigateAbout?.();
-                }}
-                className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider"
-              >
-                À propos
               </a>
               {user?.role !== 'livreur' && (
                 <button onClick={onOpenTracker} className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">
@@ -323,16 +311,6 @@ export default function Header({
               )}
 
               <div className="space-y-1">
-                <button 
-                  onClick={() => { 
-                    setMenuOpen(false); 
-                    onNavigateAbout?.(); 
-                  }} 
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"
-                >
-                  <span className="text-lg">ℹ️</span> À propos
-                </button>
-
                 <button onClick={() => { setMenuOpen(false); onOpenContact?.(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left">
                   <span className="text-lg">📧</span> Nous Contacter
                 </button>

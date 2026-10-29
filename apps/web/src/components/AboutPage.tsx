@@ -1,5 +1,12 @@
 import { getLegalDoc } from '@lumoo/core';
-import { CheckCircle, MapPin, Phone, Clock, Heart } from 'lucide-react';
+import { CheckCircle, MapPin, Phone, Clock, Heart, Eye } from 'lucide-react';
+import { OrangeMoneyLogo, MoovMoneyLogo, WaveLogo } from './PaymentLogos';
+
+const PARTNERS = [
+  { name: 'Orange Money', logo: <OrangeMoneyLogo className="w-12 h-12" /> },
+  { name: 'Moov Money', logo: <MoovMoneyLogo className="w-12 h-12" /> },
+  { name: 'Wave', logo: <WaveLogo className="w-12 h-12" /> },
+];
 
 export default function AboutPage({ onClose }: { onClose: () => void }) {
   const doc = getLegalDoc('apropos');
@@ -44,6 +51,18 @@ export default function AboutPage({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="p-8 space-y-8">
+          {/* Vision */}
+          <section className="bg-green-50 rounded-2xl p-6 border border-green-100">
+            <h2 className="text-2xl font-black text-green-900 mb-4 flex items-center gap-3">
+              <Eye className="w-6 h-6 text-green-600" aria-hidden="true" />
+              Notre Vision
+            </h2>
+            <p className="text-gray-700 leading-6">
+              Devenir la référence du commerce en ligne au Mali, où chaque famille accède facilement à des produits
+              de qualité, et où chaque producteur local peut vendre à plus grande échelle.
+            </p>
+          </section>
+
           {/* Mission */}
           {doc.sections[0] && (
             <section className="bg-green-50 rounded-2xl p-6 border border-green-100">
@@ -105,6 +124,22 @@ export default function AboutPage({ onClose }: { onClose: () => void }) {
               </div>
             </section>
           )}
+
+          {/* Partenaires */}
+          <section>
+            <h2 className="text-2xl font-black text-gray-900 mb-4">Nos Partenaires</h2>
+            <ul className="flex gap-3 overflow-x-auto pb-2" aria-label="Liste des partenaires">
+              {PARTNERS.map((p) => (
+                <li
+                  key={p.name}
+                  aria-label={p.name}
+                  className="shrink-0 min-w-[120px] h-20 flex items-center justify-center bg-white rounded-2xl border border-gray-200 px-4"
+                >
+                  {p.logo}
+                </li>
+              ))}
+            </ul>
+          </section>
 
           {/* Horaires */}
           {doc.sections[4] && (

@@ -41,6 +41,7 @@ CREATE OR REPLACE FUNCTION create_password_reset_token(p_user_email TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_user_id TEXT;
@@ -78,6 +79,7 @@ CREATE OR REPLACE FUNCTION reset_password_with_token(p_token TEXT, p_new_passwor
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_user_id TEXT;

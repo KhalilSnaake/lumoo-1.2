@@ -4,7 +4,15 @@ import { getEffectiveProductPrice } from '../utils/pricing';
 
 function generateOrderId(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  // SÉCURITÉ : le suivi par numéro seul impose un suffixe imprévisible (CSPRNG, 8 car. base36)
+  let random = '';
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    random = Array.from(bytes, (b) => (b % 36).toString(36)).join('').toUpperCase();
+  } else {
+    random = Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
   return `LUM-${timestamp}-${random}`;
 }
 
@@ -125,12 +133,15 @@ export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
 }
 
 // Suivi sécurisé d'une commande (invité) : la RLS verrouille `orders`,
-// on passe par la fonction SECURITY DEFINER `track_order(numéro, code)`.
-export async function apiTrackOrder(orderId: string, deliveryCode: string): Promise<any | null> {
+// on passe par la fonction SECURITY DEFINER `track_order(numéro, code?)`.
+// Numéro seul → vue limitée (sans données personnelles ni code de livraison) ;
+// numéro + code → vue complète.
+export async function apiTrackOrder(orderId: string, deliveryCode?: string): Promise<any | null> {
   const supabase = getSupabase();
+  const code = deliveryCode?.trim();
   const { data, error } = await supabase.rpc('track_order', {
     p_order_id: orderId.trim().toUpperCase(),
-    p_delivery_code: deliveryCode.trim(),
+    p_delivery_code: code ? code : null,
   });
   if (error || !data) return null;
   return data;

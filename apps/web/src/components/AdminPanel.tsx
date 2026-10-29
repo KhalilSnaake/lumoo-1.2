@@ -524,6 +524,18 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
     paymentProofFileInputRef.current?.click();
   };
 
+  const openPaymentProof = async (stored: string) => {
+    // Anciennes lignes : URL publique complète → on en extrait le chemin du bucket.
+    const marker = '/documents/';
+    const path = stored.startsWith('http') ? stored.slice(stored.indexOf(marker) + marker.length) : stored;
+    const { data, error } = await getSupabase().storage.from('documents').createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      showToast('❌ Impossible d\'ouvrir la preuve de paiement', 'error');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handlePaymentProofUpload = async (e: React.ChangeEvent<HTMLInputElement>, order: Order) => {
     const supabase = getSupabase();
     const file = e.target.files?.[0];
@@ -550,7 +562,8 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
       const fileExt = file.name.split('.').pop();
       const fileName = `payment_proofs/${order.id}_${Date.now()}.${fileExt}`;
       const filePath = fileName;
-      let publicUrl: string;
+      // Bucket privé : on enregistre le chemin, pas une URL publique (URL signée à l'ouverture).
+      let storedPath: string = filePath;
 
       // Upload to Supabase storage - use documents bucket for payment proofs
       // Note: The documents bucket needs to be created first
@@ -571,19 +584,12 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
         if (alternateUpload.error) {
           throw alternateUpload.error;
         } else {
-          // Get the public URL from the alternate path
-          const { data: { publicUrl: alternatePublicUrl } } = supabase.storage.from('documents').getPublicUrl(alternateFilePath);
-          publicUrl = alternatePublicUrl;
+          storedPath = alternateFilePath;
         }
-      } else {
-        // Get the public URL from the original path
-        const { data: { publicUrl: originalPublicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
-        publicUrl = originalPublicUrl;
       }
 
-      // Update the order with the payment proof URL
       await updateOrder(order.id, {
-        paymentProofUrl: publicUrl,
+        paymentProofUrl: storedPath,
         paymentProofFileName: file.name,
         paymentProofUploadedAt: new Date().toISOString()
       });
@@ -773,11 +779,10 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
                   <span>✅</span> Preuve de paiement
                 </p>
                 <div className="space-y-2">
-                  <a
-                    href={selectedOrderDetails.paymentProofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-white p-3 rounded-xl border border-gray-200 hover:border-green-300 transition-all"
+                  <button
+                    type="button"
+                    onClick={() => openPaymentProof(selectedOrderDetails.paymentProofUrl as string)}
+                    className="block w-full text-left bg-white p-3 rounded-xl border border-gray-200 hover:border-green-300 transition-all"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-lg">📄</span>
@@ -792,7 +797,7 @@ function CommandesTab({ initialSearch = '' }: { initialSearch?: string }) {
                       </div>
                       <span className="text-green-600 text-xs font-bold">🔗 Ouvrir</span>
                     </div>
-                  </a>
+                  </button>
                   <button
                     onClick={async () => {
                       if (confirm('Supprimer cette preuve de paiement ?')) {

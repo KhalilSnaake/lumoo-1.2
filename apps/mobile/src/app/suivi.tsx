@@ -31,16 +31,17 @@ type TrackedItem = { name: string; emoji?: string; price: number; quantity: numb
 type TrackedOrder = {
   id: string;
   status: OrderStatus;
-  deliveryCode: string;
-  customerName: string;
-  address: string;
+  limited?: boolean;
+  deliveryCode?: string;
+  customerName?: string;
+  address?: string;
   city: string;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  gps_lat?: number | null;
+  gps_lng?: number | null;
   paymentMethod: PaymentMethod;
   totalPrice: number;
   createdAt: string;
-  livreur: { name: string; phone: string } | null;
+  livreur?: { name: string; phone: string } | null;
   items: TrackedItem[];
 };
 
@@ -48,20 +49,24 @@ export default function SuiviScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string; code?: string }>();
   const [orderId, setOrderId] = useState(params.id ?? "");
-  const [code, setCode] = useState(params.code ?? "");
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
 
   const runSearch = async (oid: string, c: string) => {
-    if (!oid.trim() || !c.trim()) return;
+    if (!oid.trim()) return;
     setSearching(true);
     setError(null);
     setOrder(null);
     try {
       const data = await apiTrackOrder(oid, c);
-      if (!data) setError("Commande introuvable. Vérifie le numéro et le code de livraison.");
-      else setOrder(data as TrackedOrder);
+      if (!data) {
+        setError(
+          c.trim()
+            ? "Commande introuvable. Vérifie le numéro et le code de livraison."
+            : "Commande introuvable. Vérifie le numéro de commande.",
+        );
+      } else setOrder(data as TrackedOrder);
     } catch {
       setError("Une erreur est survenue. Réessaie.");
     } finally {
@@ -69,11 +74,11 @@ export default function SuiviScreen() {
     }
   };
 
-  const search = () => runSearch(orderId, code);
+  const search = () => runSearch(orderId, "");
 
   // Pré-rempli depuis le détail d'une commande → recherche automatique une fois.
   useEffect(() => {
-    if (params.id && params.code) runSearch(params.id, params.code);
+    if (params.id) runSearch(params.id, params.code ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,31 +96,24 @@ export default function SuiviScreen() {
       <ScrollView contentContainerClassName="p-4" keyboardShouldPersistTaps="handled">
         {/* Recherche */}
         <View className="gap-2">
-          <TextInput
-            value={orderId}
-            onChangeText={setOrderId}
-            placeholder="N° commande — Ex : LUM-M5X7KQ-A2B4"
-            placeholderTextColor="#9CA3AF"
-            autoCapitalize="characters"
-            accessibilityLabel="Numéro de commande"
-            className="min-h-12 rounded-2xl border border-gray-200 bg-white px-4 py-3 font-body text-gray-900"
-          />
           <View className="flex-row gap-2">
             <TextInput
-              value={code}
-              onChangeText={setCode}
-              placeholder="Code de livraison (4 chiffres)"
+              value={orderId}
+              onChangeText={setOrderId}
+              onSubmitEditing={search}
+              returnKeyType="search"
+              placeholder="N° commande — Ex : LUM-M5X7KQ-A2B4"
               placeholderTextColor="#9CA3AF"
-              inputMode="numeric"
-              accessibilityLabel="Code de livraison"
+              autoCapitalize="characters"
+              accessibilityLabel="Numéro de commande"
               className="min-h-12 flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 font-body text-gray-900"
             />
             <Pressable
               onPress={search}
-              disabled={searching || !orderId.trim() || !code.trim()}
+              disabled={searching || !orderId.trim()}
               accessibilityRole="button"
               accessibilityLabel="Rechercher"
-              className={`h-12 w-14 items-center justify-center rounded-2xl bg-brand active:opacity-80 ${searching || !orderId.trim() || !code.trim() ? "opacity-50" : ""}`}
+              className={`h-12 w-14 items-center justify-center rounded-2xl bg-brand active:opacity-80 ${searching || !orderId.trim() ? "opacity-50" : ""}`}
             >
               {searching ? <ActivityIndicator color="#ffffff" /> : <Search size={20} color="#ffffff" />}
             </Pressable>
@@ -167,8 +165,8 @@ export default function SuiviScreen() {
             {/* Détails */}
             <View className="rounded-3xl bg-white p-4">
               <Detail label="N° Commande" value={order.id} mono />
-              <Detail label="Client" value={order.customerName} />
-              <Detail label="Adresse" value={`${order.address}, ${order.city}`} />
+              {order.customerName ? <Detail label="Client" value={order.customerName} /> : null}
+              <Detail label="Adresse" value={order.address ? `${order.address}, ${order.city}` : order.city} />
               {order.gps_lat && order.gps_lng ? (
                 <Pressable
                   onPress={() => Linking.openURL(`https://www.google.com/maps?q=${order.gps_lat},${order.gps_lng}`)}
@@ -180,10 +178,19 @@ export default function SuiviScreen() {
                 </Pressable>
               ) : null}
               <Detail label="Paiement" value={PAYMENT_NAMES[order.paymentMethod]} />
-              <Detail label="Code livraison" value={order.deliveryCode} mono />
-              <Text className="mb-2 font-body text-[11px] text-amber-700">
-                ⚠️ À donner au livreur uniquement à la réception du colis.
-              </Text>
+              {order.deliveryCode ? (
+                <>
+                  <Detail label="Code livraison" value={order.deliveryCode} mono />
+                  <Text className="mb-2 font-body text-[11px] text-amber-700">
+                    ⚠️ À donner au livreur uniquement à la réception du colis.
+                  </Text>
+                </>
+              ) : null}
+              {order.limited ? (
+                <Text className="mb-2 font-body text-[11px] text-gray-500">
+                  Pour voir l'adresse, le livreur et le code de livraison, saisis aussi le code de livraison.
+                </Text>
+              ) : null}
 
               <View className="mt-2 border-t border-gray-100 pt-2">
                 {order.items.map((it, i) => (

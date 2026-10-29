@@ -1,6 +1,6 @@
 import { Tabs, router } from "expo-router";
 import { Pressable, View } from "react-native";
-import { Home, LayoutGrid, MessageCircle, Package, ShoppingCart, User } from "lucide-react-native";
+import { Home, Info, LayoutGrid, MessageCircle, Package, ShoppingCart, User } from "lucide-react-native";
 import { useCart } from "@lumoo/core";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/notification-bell";
@@ -22,6 +22,15 @@ export default function TabsLayout() {
         headerTitleStyle: { fontWeight: "800", color: BRAND },
         headerRight: () => (
           <View className="flex-row items-center">
+            <Pressable
+              onPress={() => router.push("/apropos")}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="À propos de Lumoo"
+              className="mr-1 h-9 w-9 items-center justify-center"
+            >
+              <Info size={22} color="#16a34a" />
+            </Pressable>
             <Pressable
               onPress={() => router.push("/contact")}
               hitSlop={8}

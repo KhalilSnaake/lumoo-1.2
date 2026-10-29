@@ -4,7 +4,7 @@ export function MaliPhoneInput({
   value,
   onChange,
   label,
-  placeholder = "77 99 68 58",
+  placeholder = "84 00 72 00",
 }: {
   value: string;
   onChange: (v: string) => void;

@@ -184,6 +184,17 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
+                  name="apropos"
+                  options={{
+                    presentation: "modal",
+                    headerShown: true,
+                    title: "À propos",
+                    headerStyle: { backgroundColor: "#ffffff" },
+                    headerTintColor: "#16a34a",
+                    headerTitleStyle: { fontWeight: "800", color: "#16a34a" },
+                  }}
+                />
+                <Stack.Screen
                   name="contact"
                   options={{
                     headerShown: true,

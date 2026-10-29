@@ -52,7 +52,8 @@ BEGIN
   FOR UPDATE
   USING (
     auth.uid() IS NOT NULL AND
-    bucket_id = 'documents'
+    bucket_id = 'documents' AND
+    (owner::text = auth.uid()::text OR public.is_admin())
   );
 
   -- Policy for authenticated users to delete their own files
@@ -61,7 +62,8 @@ BEGIN
   FOR DELETE
   USING (
     auth.uid() IS NOT NULL AND
-    bucket_id = 'documents'
+    bucket_id = 'documents' AND
+    (owner::text = auth.uid()::text OR public.is_admin())
   );
 
   RAISE NOTICE 'Created comprehensive RLS policies for documents bucket with proper authentication checks';

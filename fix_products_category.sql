@@ -68,7 +68,9 @@ DROP POLICY IF EXISTS "Public read products" ON products;
 DROP POLICY IF EXISTS "Admin CRUD products" ON products;
 
 CREATE POLICY "Public read products" ON products FOR SELECT USING (true);
-CREATE POLICY "Admin CRUD products" ON products FOR ALL USING (true);
+CREATE POLICY "Admin insert products" ON products FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update products" ON products FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admin delete products" ON products FOR DELETE USING (public.is_admin());
 
 -- 4. Vérification finale
 SELECT

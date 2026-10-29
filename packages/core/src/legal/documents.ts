@@ -281,7 +281,6 @@ export const LEGAL_DOCS: Record<string, LegalDoc> = {
 
 /** Ordre + libellés des liens légaux (footer d'inscription, etc.) — partagé mobile/web. */
 export const LEGAL_DOC_LINKS: { slug: string; label: string }[] = [
-  { slug: "apropos", label: "À propos" },
   { slug: "cgu", label: "CGU" },
   { slug: "cgv", label: "CGV" },
   { slug: "confidentialite", label: "Confidentialité" },

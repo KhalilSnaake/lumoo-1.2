@@ -102,8 +102,10 @@ function MainApp() {
     cleanParam('delete-account');
   };
 
-  // Expose admin open to window for quick access from dashboard
-  (window as any).openAdmin = () => setShowAdmin(true);
+  // Accès rapide administration : restreint strictement au rôle admin
+  (window as any).openAdmin = () => {
+    if (user?.role === 'admin') setShowAdmin(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">

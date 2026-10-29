@@ -86,6 +86,7 @@ const tabs: { key: Tab; label: string; emoji: string }[] = [
 ];
 
 export default function AdminPanel({ onClose, initialOrderId }: { onClose: () => void; initialOrderId?: string }) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>(initialOrderId ? 'commandes' : 'dashboard');
   const [initialSearch] = useState(initialOrderId || '');
 
@@ -113,6 +114,11 @@ export default function AdminPanel({ onClose, initialOrderId }: { onClose: () =>
   useEffect(() => {
     if (initialOrderId) setActiveTab('commandes');
   }, [initialOrderId]);
+
+  // SÉCURITÉ : Ne jamais afficher le panneau d'administration si l'utilisateur n'est pas connecté en tant qu'admin
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-gray-100 flex flex-col">

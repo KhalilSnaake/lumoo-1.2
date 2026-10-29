@@ -5,10 +5,17 @@
 --
 -- À exécuter UNE FOIS dans Supabase (SQL Editor).
 
+-- ⚠️ OBSOLÈTE & DÉCONSEILLÉ :
+-- Lumoo utilise désormais Supabase Auth (auth.users) avec la méthode standard
+-- `supabase.auth.resetPasswordForEmail()` qui gère les jetons de façon chiffrée,
+-- éphémère et sécurisée avec rate-limiting natif.
+-- Ce fichier est conservé à titre d'archive pour d'anciens schémas, mais a été
+-- durci pour bloquer toute insertion directe par un attaquant.
+
 -- 1) Helpers : extension pour gen_random_bytes
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2) Table des reset tokens
+-- 2) Table des reset tokens (verrouillée côté client)
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
@@ -22,24 +29,11 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY;
 
--- Politiques (publique pour insérer un token)
+-- SÉCURITÉ : Aucune insertion directe autorisée côté client.
+-- Seule la fonction SECURITY DEFINER `create_password_reset_token` peut insérer un jeton.
 DROP POLICY IF EXISTS "Public insert reset token" ON password_reset_tokens;
-CREATE POLICY "Public insert reset token" ON password_reset_tokens
-  FOR INSERT
-  WITH CHECK (true);
-
--- Public pas de read
 DROP POLICY IF EXISTS "Public read reset tokens" ON password_reset_tokens;
-CREATE POLICY "Public read reset tokens" ON password_reset_tokens
-  FOR SELECT
-  USING (false);
-
--- Non-admin : pas d'update/delete direct
 DROP POLICY IF EXISTS "Public update reset tokens" ON password_reset_tokens;
-CREATE POLICY "Public update reset tokens" ON password_reset_tokens
-  FOR UPDATE
-  USING (false)
-  WITH CHECK (false);
 
 -- 3) Function : créer un token
 -- Retourne le token généré.

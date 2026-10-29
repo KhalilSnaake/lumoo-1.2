@@ -14,6 +14,73 @@ export interface LegalDoc {
 }
 
 export const LEGAL_DOCS: Record<string, LegalDoc> = {
+  apropos: {
+    slug: "apropos",
+    title: "À propos de Lumoo",
+    intro: "Découvrez la mission, les valeurs et l'équipe derrière Lumoo.",
+    sections: [
+      {
+        heading: "Notre Mission",
+        paragraphs: [
+          "Lumoo est une plateforme d'e-commerce qui connecte les producteurs et commerçants du Mali directement aux consommateurs. Notre mission est de faciliter l'accès à des produits alimentaires frais et de qualité, tout en soutenant l'économie locale malienne.",
+          "Nous croyons que chaque famille mérite accès à des produits de qualité, livrés rapidement et à des prix justes.",
+        ],
+      },
+      {
+        heading: "Nos Valeurs",
+        paragraphs: [
+          "🟢 Qualité : Nous sélectionnons les meilleurs produits et producteurs locaux.",
+          "💚 Confiance : La transparence et l'honnêteté guident chaque interaction.",
+          "🚀 Innovation : Nous utilisons la technologie pour simplifier vos courses.",
+          "🌍 Responsabilité : Nous soutenons les entrepreneurs locaux du Mali.",
+        ],
+      },
+      {
+        heading: "Comment ça marche ?",
+        paragraphs: [
+          "1. Parcourez nos produits sur l'application Lumoo",
+          "2. Préparez votre panier et passez votre commande via WhatsApp",
+          "3. Confirmez les détails de livraison et le paiement",
+          "4. Recevez votre commande livrée rapidement chez vous",
+          "Les paiements se font via Orange Money, Wave, ou à la livraison.",
+        ],
+      },
+      {
+        heading: "Pourquoi Lumoo ?",
+        paragraphs: [
+          "✓ Produits frais et de qualité directement des producteurs",
+          "✓ Livraison rapide à Bamako et environs",
+          "✓ Prix justes et transparents",
+          "✓ Paiements flexibles (mobile money, espèces)",
+          "✓ Support client réactif via WhatsApp",
+          "✓ Soutien à l'économie locale malienne",
+        ],
+      },
+      {
+        heading: "Nos Horaires",
+        paragraphs: [
+          "Lundi - Samedi : 7h - 20h",
+          "Dimanche : Fermé",
+          "Les commandes sont livrées le jour même ou le lendemain selon votre localisation.",
+        ],
+      },
+      {
+        heading: "Contact & Support",
+        paragraphs: [
+          "📞 Téléphone / WhatsApp : +223 84 00 72 00",
+          "📧 Email : contact@lumoo.ml",
+          "📍 Basé à : Bamako, Mali",
+          "Nous sommes disponibles pour répondre à toutes vos questions et préoccupations.",
+        ],
+      },
+      {
+        heading: "L'Équipe Lumoo",
+        paragraphs: [
+          "Lumoo a été fondée par une équipe de jeunes entrepreneurs maliens passionnés par la technologie et l'innovation. Nous travaillons chaque jour pour améliorer votre expérience d'achat en ligne et soutenir les producteurs locaux.",
+        ],
+      },
+    ],
+  },
   cgu: {
     slug: "cgu",
     title: "Conditions Générales d'Utilisation",

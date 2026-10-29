@@ -47,6 +47,26 @@ create policy "profiles_update" on public.profiles
   for update using (id = auth.uid() or public.is_admin())
   with check (id = auth.uid() or public.is_admin());
 
+-- SÉCURITÉ : Empêcher l'élévation de privilèges (un client ne peut pas se promouvoir admin)
+create or replace function public.protect_profile_role()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (new.role is distinct from old.role or new.blocked is distinct from old.blocked) and not public.is_admin() then
+    raise exception 'Interdit : la modification du rôle ou du statut bloqué est réservée aux administrateurs.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_protect_profile_role on public.profiles;
+create trigger trg_protect_profile_role
+  before update on public.profiles
+  for each row execute function public.protect_profile_role();
+
 drop policy if exists "profiles_insert_self" on public.profiles;
 create policy "profiles_insert_self" on public.profiles
   for insert with check (id = auth.uid());

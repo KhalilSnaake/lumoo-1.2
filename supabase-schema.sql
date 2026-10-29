@@ -60,22 +60,54 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
--- 6. Politiques RLS - Permettre tout en lecture/écriture (publique pour l'app)
--- En production, restreignez ces politiques !
-CREATE POLICY "Public read users" ON users FOR SELECT USING (true);
-CREATE POLICY "Public insert users" ON users FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public update users" ON users FOR UPDATE USING (true);
-CREATE POLICY "Public delete users" ON users FOR DELETE USING (true);
+-- 6. Politiques RLS sécurisées
+-- Commandes : seuls le propriétaire et l'administrateur peuvent lire.
+-- Les invités créent leur commande (user_id IS NULL) et la suivent via track_order().
+DROP POLICY IF EXISTS "Public read orders" ON orders;
+DROP POLICY IF EXISTS "Public insert orders" ON orders;
+DROP POLICY IF EXISTS "Public update orders" ON orders;
+DROP POLICY IF EXISTS "Public delete orders" ON orders;
 
-CREATE POLICY "Public read orders" ON orders FOR SELECT USING (true);
-CREATE POLICY "Public insert orders" ON orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public update orders" ON orders FOR UPDATE USING (true);
-CREATE POLICY "Public delete orders" ON orders FOR DELETE USING (true);
+CREATE POLICY "orders_select" ON orders
+  FOR SELECT USING (user_id::text = auth.uid()::text OR public.is_admin());
 
-CREATE POLICY "Public read order_items" ON order_items FOR SELECT USING (true);
-CREATE POLICY "Public insert order_items" ON order_items FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public update order_items" ON order_items FOR UPDATE USING (true);
-CREATE POLICY "Public delete order_items" ON order_items FOR DELETE USING (true);
+CREATE POLICY "orders_insert" ON orders
+  FOR INSERT WITH CHECK (user_id IS NULL OR user_id::text = auth.uid()::text);
+
+CREATE POLICY "orders_update" ON orders
+  FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "orders_delete" ON orders
+  FOR DELETE USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Public read order_items" ON order_items;
+DROP POLICY IF EXISTS "Public insert order_items" ON order_items;
+DROP POLICY IF EXISTS "Public update order_items" ON order_items;
+DROP POLICY IF EXISTS "Public delete order_items" ON order_items;
+
+CREATE POLICY "order_items_select" ON order_items
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM orders o
+      WHERE o.id = order_items.order_id
+        AND (o.user_id::text = auth.uid()::text OR public.is_admin())
+    )
+  );
+
+CREATE POLICY "order_items_insert" ON order_items
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM orders o
+      WHERE o.id = order_items.order_id
+        AND (o.user_id IS NULL OR o.user_id::text = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "order_items_update" ON order_items
+  FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "order_items_delete" ON order_items
+  FOR DELETE USING (public.is_admin());
 
 -- 7. Table des catégories
 ALTER TABLE categories DROP COLUMN IF EXISTS emoji;
@@ -89,9 +121,13 @@ CREATE TABLE IF NOT EXISTS categories (
 -- Enable RLS for categories
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
--- Policies (open for now, align with products/admin CRUD)
+-- Policies sécurisées pour les catégories
+DROP POLICY IF EXISTS "Public read categories" ON categories;
+DROP POLICY IF EXISTS "Admin CRUD categories" ON categories;
 CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
-CREATE POLICY "Admin CRUD categories" ON categories FOR ALL USING (true);
+CREATE POLICY "Admin insert categories" ON categories FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update categories" ON categories FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admin delete categories" ON categories FOR DELETE USING (public.is_admin());
 
 -- 8. Table des publicités
 CREATE TABLE IF NOT EXISTS ads (
@@ -104,10 +140,14 @@ CREATE TABLE IF NOT EXISTS ads (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- RLS pour les publicités
+-- RLS pour les publicités (lecture publique, écriture admin)
 ALTER TABLE ads ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read ads" ON ads;
+DROP POLICY IF EXISTS "Admin CRUD ads" ON ads;
 CREATE POLICY "Public read ads" ON ads FOR SELECT USING (true);
-CREATE POLICY "Admin CRUD ads" ON ads FOR ALL USING (true);
+CREATE POLICY "Admin insert ads" ON ads FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update ads" ON ads FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admin delete ads" ON ads FOR DELETE USING (public.is_admin());
 
 -- 9. Table des messages de contact
 CREATE TABLE IF NOT EXISTS contact_messages (

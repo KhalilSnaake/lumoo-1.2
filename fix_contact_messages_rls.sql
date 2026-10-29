@@ -7,25 +7,35 @@ SELECT table_name FROM information_schema.tables WHERE table_name = 'contact_mes
 -- Update RLS policies to ensure proper admin access
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
 
--- Remove any existing restrictive policies
+-- Remove any existing policies
 DROP POLICY IF EXISTS "Public read contact_messages" ON contact_messages;
 DROP POLICY IF EXISTS "Public insert contact_messages" ON contact_messages;
 DROP POLICY IF EXISTS "Admin update contact_messages" ON contact_messages;
 DROP POLICY IF EXISTS "Allow authenticated users to read their own messages" ON contact_messages;
+DROP POLICY IF EXISTS "Allow admin full access to contact messages" ON contact_messages;
+DROP POLICY IF EXISTS "Allow all authenticated users to read messages" ON contact_messages;
+DROP POLICY IF EXISTS "Admins can view all contact messages" ON contact_messages;
+DROP POLICY IF EXISTS "Admins can update contact messages" ON contact_messages;
+DROP POLICY IF EXISTS "Public can insert contact messages" ON contact_messages;
+DROP POLICY IF EXISTS "Allow public insert for contact form submissions" ON contact_messages;
 
--- Create new policies with proper admin access
+-- Create secure policies: anyone can send a message, only admins can view and manage
 CREATE POLICY "Allow public insert for contact form submissions"
 ON contact_messages FOR INSERT
 WITH CHECK (true);
 
-CREATE POLICY "Allow admin full access to contact messages"
-ON contact_messages FOR ALL
-USING (auth.role() = 'admin');
-
--- Simple policy for all authenticated users to read messages (for admin panel)
-CREATE POLICY "Allow all authenticated users to read messages"
+CREATE POLICY "Allow admin select contact messages"
 ON contact_messages FOR SELECT
-USING (auth.uid() IS NOT NULL);
+USING (public.is_admin());
+
+CREATE POLICY "Allow admin update contact messages"
+ON contact_messages FOR UPDATE
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+CREATE POLICY "Allow admin delete contact messages"
+ON contact_messages FOR DELETE
+USING (public.is_admin());
 
 -- Grant permissions
 ALTER TABLE contact_messages OWNER TO postgres;

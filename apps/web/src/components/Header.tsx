@@ -5,7 +5,23 @@ import { useCart, useAuth, useNotifications, useSearch } from '@lumoo/core';
 import Logo from './Logo';
 import NotificationMenu from './NotificationMenu';
 
-export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, onOpenOrder, onOpenContact }: { onOpenAdmin: (orderId?: string) => void; onOpenTracker: () => void; onOpenDashboard: () => void; onOpenOrder?: (id: string) => void; onOpenContact?: () => void }) {
+export default function Header({ 
+  onOpenAdmin, 
+  onOpenTracker, 
+  onOpenDashboard, 
+  onOpenOrder, 
+  onOpenContact,
+  onNavigateHome,
+  onNavigateAbout,
+}: { 
+  onOpenAdmin: (orderId?: string) => void; 
+  onOpenTracker: () => void; 
+  onOpenDashboard: () => void; 
+  onOpenOrder?: (id: string) => void; 
+  onOpenContact?: () => void;
+  onNavigateHome?: () => void;
+  onNavigateAbout?: () => void;
+}) {
   const { totalItems, setIsCartOpen, setIsCartBuilderOpen } = useCart();
   const { user, isLoggedIn, logout, setShowAuth } = useAuth();
   const { unreadCount } = useNotifications();
@@ -55,7 +71,14 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
             {/* Logo - Clickable to Home/Top */}
             <a 
               href="/" 
-              onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              onClick={(e) => { 
+                e.preventDefault(); 
+                if (onNavigateHome) {
+                  onNavigateHome();
+                } else {
+                  window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                }
+              }}
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group"
             >
               <Logo size={170} />
@@ -79,7 +102,31 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
 
             {/* Desktop Navigation */}
             <nav className="hidden xl:flex items-center gap-5 text-sm font-medium text-gray-600">
-              <a href="#produits" className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">Nos Produits</a>
+              <a 
+                href="/#produits" 
+                onClick={(e) => {
+                  if (window.location.pathname !== '/') {
+                    e.preventDefault();
+                    onNavigateHome?.();
+                    setTimeout(() => {
+                      document.getElementById('produits')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }
+                }}
+                className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider"
+              >
+                Nos Produits
+              </a>
+              <a
+                href="/a-propos"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigateAbout?.();
+                }}
+                className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider"
+              >
+                À propos
+              </a>
               {user?.role !== 'livreur' && (
                 <button onClick={onOpenTracker} className="hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-wider">
                   Suivre ma commande
@@ -276,6 +323,16 @@ export default function Header({ onOpenAdmin, onOpenTracker, onOpenDashboard, on
               )}
 
               <div className="space-y-1">
+                <button 
+                  onClick={() => { 
+                    setMenuOpen(false); 
+                    onNavigateAbout?.(); 
+                  }} 
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left"
+                >
+                  <span className="text-lg">ℹ️</span> À propos
+                </button>
+
                 <button onClick={() => { setMenuOpen(false); onOpenContact?.(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors text-sm font-medium text-left">
                   <span className="text-lg">📧</span> Nous Contacter
                 </button>

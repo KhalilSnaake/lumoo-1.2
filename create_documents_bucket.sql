@@ -43,15 +43,15 @@ BEGIN
   FOR SELECT
   USING (bucket_id = 'documents');
 
-  -- Create policy for updates (in case needed)
+  -- Create policy for updates (owner only)
   CREATE POLICY "Allow authenticated update to documents bucket" ON storage.objects
   FOR UPDATE
-  USING (bucket_id = 'documents');
+  USING (bucket_id = 'documents' AND (owner::text = auth.uid()::text OR public.is_admin()));
 
-  -- Create policy for deletes (in case needed)
+  -- Create policy for deletes (owner only)
   CREATE POLICY "Allow authenticated delete to documents bucket" ON storage.objects
   FOR DELETE
-  USING (bucket_id = 'documents');
+  USING (bucket_id = 'documents' AND (owner::text = auth.uid()::text OR public.is_admin()));
 
   RAISE NOTICE 'Created comprehensive RLS policies for documents bucket';
 END $$;

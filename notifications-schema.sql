@@ -17,8 +17,22 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read) WHERE r
 -- 3. Activer RLS
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
--- 4. Politiques RLS
-CREATE POLICY "Users can see their own notifications" ON notifications FOR SELECT USING (true);
-CREATE POLICY "Internal insert notifications" ON notifications FOR INSERT WITH CHECK (true);
-CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (true);
-CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE USING (true);
+-- 4. Politiques RLS sécurisées
+DROP POLICY IF EXISTS "Users can see their own notifications" ON notifications;
+DROP POLICY IF EXISTS "Internal insert notifications" ON notifications;
+DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
+DROP POLICY IF EXISTS "Users can delete their own notifications" ON notifications;
+
+CREATE POLICY "notifications_select" ON notifications
+  FOR SELECT USING (user_id::text = auth.uid()::text OR public.is_admin());
+
+CREATE POLICY "notifications_update" ON notifications
+  FOR UPDATE USING (user_id::text = auth.uid()::text OR public.is_admin())
+  WITH CHECK (user_id::text = auth.uid()::text OR public.is_admin());
+
+CREATE POLICY "notifications_delete" ON notifications
+  FOR DELETE USING (user_id::text = auth.uid()::text OR public.is_admin());
+
+-- Seuls les triggers serveur (SECURITY DEFINER) et les admins peuvent insérer des notifications
+CREATE POLICY "notifications_insert_admin" ON notifications
+  FOR INSERT WITH CHECK (public.is_admin());

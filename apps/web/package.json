@@ -12,6 +12,7 @@
     "@lumoo/core": "*",
     "@supabase/supabase-js": "^2.105.4",
     "clsx": "2.1.1",
+    "lucide-react": "^1.63.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "read-excel-file": "^9.0.10",

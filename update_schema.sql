@@ -17,8 +17,12 @@ CREATE TABLE IF NOT EXISTS categories (
 
 
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read categories" ON categories;
+DROP POLICY IF EXISTS "Admin CRUD categories" ON categories;
 CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
-CREATE POLICY "Admin CRUD categories" ON categories FOR ALL USING (true);
+CREATE POLICY "Admin insert categories" ON categories FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update categories" ON categories FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admin delete categories" ON categories FOR DELETE USING (public.is_admin());
 
 -- Add products table
 CREATE TABLE IF NOT EXISTS products (
@@ -26,6 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   description TEXT,
   price INTEGER NOT NULL,
+  promo_price INTEGER,
   unit TEXT NOT NULL,
   category_id INTEGER REFERENCES categories(id),
   image_url TEXT,
@@ -42,8 +47,11 @@ CREATE TABLE IF NOT EXISTS products (
 ALTER TABLE products ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_products_is_popular ON products(is_popular) WHERE is_popular = true;
 
-
 -- Enable RLS for products
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read products" ON products;
+DROP POLICY IF EXISTS "Admin CRUD products" ON products;
 CREATE POLICY "Public read products" ON products FOR SELECT USING (true);
-CREATE POLICY "Admin CRUD products" ON products FOR ALL USING (true);
+CREATE POLICY "Admin insert products" ON products FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin update products" ON products FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admin delete products" ON products FOR DELETE USING (public.is_admin());

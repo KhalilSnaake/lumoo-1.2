@@ -8,6 +8,16 @@ function generateOrderId(): string {
   return `LUM-${timestamp}-${random}`;
 }
 
+// SÉCURITÉ : Code de retrait généré avec un CSPRNG (Web Crypto API) pour éviter toute prévisibilité
+function generateSecureDeliveryCode(): string {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return (1000 + (array[0] % 9000)).toString();
+  }
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
 function rowToOrder(row: any, items: any[]): Order {
   return {
     id: row.id,
@@ -47,7 +57,7 @@ function rowToOrder(row: any, items: any[]): Order {
 export async function apiCreateOrder(input: CreateOrderInput): Promise<Order> {
   const supabase = getSupabase();
   const orderId = generateOrderId();
-  const deliveryCode = Math.floor(1000 + Math.random() * 9000).toString(); 
+  const deliveryCode = generateSecureDeliveryCode(); 
   const now = new Date().toISOString();
   
   const totalPrice = input.items.reduce((sum, item) => {

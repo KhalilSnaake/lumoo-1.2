@@ -19,15 +19,21 @@ CREATE INDEX IF NOT EXISTS idx_contact_messages_is_read ON contact_messages(is_r
 -- Set up Row Level Security (RLS) policies
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
 
--- Policy for admins to view all messages
+-- Policy for admins to view all messages (via public.is_admin() SECURITY DEFINER)
 CREATE POLICY "Admins can view all contact messages"
 ON contact_messages FOR SELECT
-USING (auth.role() = 'admin');
+USING (public.is_admin());
 
 -- Policy for admins to update messages (mark as read, add response)
 CREATE POLICY "Admins can update contact messages"
 ON contact_messages FOR UPDATE
-WITH CHECK (auth.role() = 'admin');
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+-- Policy for admins to delete messages
+CREATE POLICY "Admins can delete contact messages"
+ON contact_messages FOR DELETE
+USING (public.is_admin());
 
 -- Policy for public insert (anyone can submit a contact form)
 CREATE POLICY "Public can insert contact messages"
